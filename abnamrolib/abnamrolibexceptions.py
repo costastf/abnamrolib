@@ -40,3 +40,7 @@ __license__ = '''MIT'''
 __maintainer__ = '''Costas Tyfoxylos'''
 __email__ = '''<costas.tyf@gmail.com>'''
 __status__ = '''Development'''  # "Prototype", "Development", "Production".
+
+
+class AuthenticationFailed(Exception):
+    """The token provided is invalid or the authentication failed for some other reason."""

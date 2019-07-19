@@ -24,20 +24,18 @@
 #
 
 """
-abnamrolib package.
+core package
 
-Import all parts from abnamrolib here
+Import all parts from core here
 
 .. _Google Python Style Guide:
    http://google.github.io/styleguide/pyguide.html
 """
-from ._version import __version__
-from .abnamrolib import AbnAmroContract
-from .abnamroics import CreditCard
+from .core import AccountAuthenticator, Transaction
 
 __author__ = '''Costas Tyfoxylos <costas.tyf@gmail.com>'''
 __docformat__ = '''google'''
-__date__ = '''19-07-2019'''
+__date__ = '''08-07-2019'''
 __copyright__ = '''Copyright 2019, Costas Tyfoxylos'''
 __license__ = '''MIT'''
 __maintainer__ = '''Costas Tyfoxylos'''
@@ -45,7 +43,5 @@ __email__ = '''<costas.tyf@gmail.com>'''
 __status__ = '''Development'''  # "Prototype", "Development", "Production".
 
 # This is to 'use' the module(s), so lint doesn't complain
-assert __version__
-
-assert AbnAmroContract
-assert CreditCard
+assert AccountAuthenticator
+assert Transaction
