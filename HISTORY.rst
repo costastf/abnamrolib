@@ -7,3 +7,9 @@ History
 ---------------------
 
 * First code creation
+
+
+0.1.0 (19-07-2019)
+------------------
+
+* initial code implementation
