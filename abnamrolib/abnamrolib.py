@@ -218,7 +218,7 @@ class AccountTransaction(Transaction):  # pylint: disable=too-many-public-method
     @property
     def amount(self):
         """Amount"""
-        return int(float(self._data.get('amount')) * 100)
+        return float(self._data.get('amount'))
 
     @property
     def payee_name(self):
