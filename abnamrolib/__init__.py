@@ -32,8 +32,8 @@ Import all parts from abnamrolib here
    http://google.github.io/styleguide/pyguide.html
 """
 from ._version import __version__
-from .abnamrolib import AbnAmroContract
-from .abnamroics import CreditCard
+from .abnamrolib import AbnAmroContract, AccountTransaction
+from .abnamroics import CreditCard, CreditCardTransaction
 
 __author__ = '''Costas Tyfoxylos <costas.tyf@gmail.com>'''
 __docformat__ = '''google'''
@@ -49,3 +49,5 @@ assert __version__
 
 assert AbnAmroContract
 assert CreditCard
+assert AccountTransaction
+assert CreditCardTransaction
