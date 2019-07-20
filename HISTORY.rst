@@ -13,3 +13,9 @@ History
 ------------------
 
 * initial code implementation
+
+
+0.2.0 (20-07-2019)
+------------------
+
+* Exposed transaction objects
