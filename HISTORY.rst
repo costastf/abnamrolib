@@ -19,3 +19,9 @@ History
 ------------------
 
 * Exposed transaction objects
+
+
+0.2.1 (20-07-2019)
+------------------
+
+* Reverted to default provided value for account transaction amount
