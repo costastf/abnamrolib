@@ -25,3 +25,9 @@ History
 ------------------
 
 * Reverted to default provided value for account transaction amount
+
+
+0.3.0 (21-07-2019)
+------------------
+
+* Removed uneeded properties from account transaction
