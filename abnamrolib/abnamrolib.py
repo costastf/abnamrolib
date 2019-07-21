@@ -215,6 +215,11 @@ class AccountTransaction(Transaction):  # pylint: disable=too-many-public-method
         """Status timestamp"""
         return self._data.get('statusTimestamp')
 
+    @property
+    def amount(self):
+        """Amount"""
+        return float(self._data.get('amount'))
+
 
 class AbnAmroContract:  # pylint: disable=too-many-instance-attributes
     """Models the service"""
