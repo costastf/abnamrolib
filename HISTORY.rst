@@ -31,3 +31,9 @@ History
 ------------------
 
 * Removed uneeded properties from account transaction
+
+
+0.4.0 (21-07-2019)
+------------------
+
+* Exposed actually existing attribute
