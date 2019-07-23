@@ -501,7 +501,7 @@ class Contract:  # pylint: disable=too-many-instance-attributes
         """
         return next((account for account in self.accounts if account.account_number.lower() == iban.lower()), None)
 
-    def get_mortage_account(self, account_number):
+    def get_mortgage_account(self, account_number):
         return next((MortgageAccount(self, account)
                      for account in self.accounts
                      if all([account.product.group == 'MORTGAGE',
