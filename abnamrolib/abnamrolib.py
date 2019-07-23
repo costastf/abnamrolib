@@ -240,7 +240,7 @@ class Account(Comparable):
     @property
     def customer(self):
         """Customer."""
-        return Customer(self._data.get('customer'))
+        return Customer(self._contract.get('customer'))
 
     @property
     def parent_contract_id(self):
