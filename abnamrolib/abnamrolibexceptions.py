@@ -24,7 +24,7 @@
 #
 
 """
-Custom exception code for abnamrolib
+Custom exception code for abnamrolib.
 
 .. _Google Python Style Guide:
    http://google.github.io/styleguide/pyguide.html

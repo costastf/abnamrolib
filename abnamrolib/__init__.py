@@ -32,7 +32,7 @@ Import all parts from abnamrolib here
    http://google.github.io/styleguide/pyguide.html
 """
 from ._version import __version__
-from .abnamrolib import AbnAmroContract, AccountTransaction
+from .abnamrolib import Contract, Account, AccountTransaction
 from .abnamroics import CreditCard, CreditCardTransaction
 
 __author__ = '''Costas Tyfoxylos <costas.tyf@gmail.com>'''
@@ -47,7 +47,8 @@ __status__ = '''Development'''  # "Prototype", "Development", "Production".
 # This is to 'use' the module(s), so lint doesn't complain
 assert __version__
 
-assert AbnAmroContract
+assert Contract
 assert CreditCard
+assert Account
 assert AccountTransaction
 assert CreditCardTransaction
