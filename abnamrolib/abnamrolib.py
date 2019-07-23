@@ -148,7 +148,7 @@ class Product:
         return self._data.get('name')
 
     @property
-    def product_group(self):
+    def group(self):
         """Product group."""
         return self._data.get('productGroup')
 
@@ -235,7 +235,7 @@ class Account(Comparable):
     @property
     def product(self):
         """Product."""
-        return self._data.get('product')
+        return Product(self._contract.get('product'))
 
     @property
     def customer(self):
@@ -294,6 +294,43 @@ class Account(Comparable):
         response.raise_for_status()
         return [AccountTransaction(data.get('mutation'))
                 for data in response.json().get('mutationsList', {}).get('mutations', [])]
+
+
+class MortgageAccount(Comparable):
+    """Models a contract."""
+
+    def __init__(self, contract, account):
+        self._logger = logging.getLogger(f'{LOGGER_BASENAME}.{self.__class__.__name__}')
+        self.contract = contract
+        self.account = account
+        self._data = self._get_data()
+        super().__init__(self._data)
+
+    def _get_data(self):
+        url = f'https://www.abnamro.nl/nl/havikonline/service/api/v1/Hypotheek/{self.account.number}'
+        response = self.contract.session.get(url)
+        response.raise_for_status()
+        return response.json()
+
+    @property
+    def full_amount(self):
+        return self._data.get('leningdelen', [{}])[0].get('oorspronkelijkHypotheekbedrag')
+
+    @property
+    def remaining_amount(self):
+        return self._data.get('totaalResterendHypotheekbedrag')
+
+    @property
+    def remaining_months(self):
+        return self._data.get('leningdelen', [{}])[0].get('restantLooptijdInMaanden')
+
+    @property
+    def monthly_amount(self):
+        return self._data.get('leningdelen', [{}])[0].get('brutoMaandlast')
+
+    @property
+    def mortgage_type(self):
+        return self._data.get('leningdelen', [{}])[0].get('hypotheeksoort')
 
 
 class AccountTransaction(Transaction):
@@ -463,3 +500,9 @@ class Contract:  # pylint: disable=too-many-instance-attributes
 
         """
         return next((account for account in self.accounts if account.account_number.lower() == iban.lower()), None)
+
+    def get_mortage_account(self, account_number):
+        return next((MortgageAccount(self, account)
+                     for account in self.accounts
+                     if all([account.product.group == 'MORTGAGE',
+                             account.number == account_number])), None)
