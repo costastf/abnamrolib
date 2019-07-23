@@ -24,7 +24,7 @@
 #
 
 """
-Main code for abnamrolib
+Main code for abnamrolib.
 
 .. _Google Python Style Guide:
    http://google.github.io/styleguide/pyguide.html
@@ -38,7 +38,8 @@ from time import sleep
 from selenium.common.exceptions import TimeoutException
 from urllib3.util import parse_url
 
-from abnamrolib.lib.core import AccountAuthenticator, Account, Transaction
+from abnamrolib.lib.core import AccountAuthenticator, Comparable, Transaction
+from abnamrolib.abnamrolibexceptions import AuthenticationFailed
 
 __author__ = '''Costas Tyfoxylos <costas.tyf@gmail.com>'''
 __docformat__ = '''google'''
@@ -58,14 +59,14 @@ LOGGER.addHandler(logging.NullHandler())
 
 
 class AbnAmroAccountAuthenticator(AccountAuthenticator):
-    """Extends the authenticator for an account"""
+    """Extends the authenticator for an account."""
 
     def authenticate(self,  # pylint: disable=arguments-differ
                      account_number,
                      card_number,
                      pin_number,
                      url='https://www.abnamro.nl/portalserver/my-abnamro/my-overview/overview/index.html'):
-        """Implements the business logic of authenticating to an account
+        """Implements the business logic of authenticating to an account.
 
         Args:
             account_number (str): The number of an account to authenticate to
@@ -77,63 +78,235 @@ class AbnAmroAccountAuthenticator(AccountAuthenticator):
             bool: True in success
 
         """
-        self._logger.info('Loading login page')
-        self._driver.get(url)
-        self._logger.info('Accepting cookies')
         try:
-            self._click_on("//*[text()='Save cookie-level']")
-        except TimeoutException:
-            self._logger.warning("Cookies window didn't pop up")
-        self._logger.info('Logging in')
-        element = self._driver.find_element_by_xpath("//*[(@label='Identification code')]")
-        element.click()
-        self._driver.find_element_by_name('accountNumber').send_keys(account_number)
-        self._driver.find_element_by_name('cardNumber').send_keys(card_number)
-        self._driver.find_element_by_name('inputElement').send_keys(pin_number)
-        self._driver.find_element_by_id('login-submit').click()
+            self._logger.info('Loading login page')
+            self._driver.get(url)
+            self._logger.info('Accepting cookies')
+            try:
+                self._click_on("//*[text()='Save cookie-level']")
+            except TimeoutException:
+                self._logger.warning("Cookies window didn't pop up")
+            self._logger.info('Logging in')
+            element = self._driver.find_element_by_xpath("//*[(@label='Identification code')]")
+            element.click()
+            self._driver.find_element_by_name('accountNumber').send_keys(account_number)
+            self._driver.find_element_by_name('cardNumber').send_keys(card_number)
+            self._driver.find_element_by_name('inputElement').send_keys(pin_number)
+            self._driver.find_element_by_id('login-submit').click()
+        except Exception:
+            self._logger.exception('Error authenticating')
+            raise AuthenticationFailed
         return True
 
 
-class Contract(Account):
-    """Models a contract"""
+class Customer:
+    """Models the customer."""
+
+    def __init__(self, data):
+        self._data = data
 
     @property
-    def number(self):
-        """Number"""
-        return self._data.get('contract', {}).get('contractNumber')
+    def appearance_type(self):
+        """Appearence type."""
+        return self._data.get('appearanceType')
+
+    @property
+    def bc_number(self):
+        """BC Number."""
+        return self._data.get('bcNumber')
+
+    @property
+    def interpay_name(self):
+        """Interpay name."""
+        return self._data.get('interpayName')
+
+
+class Product:
+    """Models the product."""
+
+    def __init__(self, data):
+        self._data = data
+
+    @property
+    def resource_type(self):
+        """Resource type."""
+        return self._data.get('resourceType')
+
+    @property
+    def id(self):  # pylint: disable=invalid-name
+        """ID."""
+        return self._data.get('id')
+
+    @property
+    def building_block_id(self):
+        """Building block ID."""
+        return self._data.get('buildingBlockId')
+
+    @property
+    def name(self):
+        """Name."""
+        return self._data.get('name')
+
+    @property
+    def product_group(self):
+        """Product group."""
+        return self._data.get('productGroup')
+
+    @property
+    def account_type(self):
+        """Account type."""
+        return self._data.get('accountType')
+
+    @property
+    def transfer_options(self):
+        """Transfer options."""
+        return self._data.get('transferOptions')
+
+
+class Account(Comparable):
+    """Models a contract."""
+
+    def __init__(self, contract, data):
+        super().__init__(data)
+        self._logger = logging.getLogger(f'{LOGGER_BASENAME}.{self.__class__.__name__}')
+        self.contract = contract
+        self._data = data
+
+    @property
+    def _contract(self):
+        """Number."""
+        return self._data.get('contract', {})
+
+    @property
+    def _balance(self):
+        """Balance."""
+        return self._data.get('contract', {}).get('balance', {})
 
     @property
     def account_number(self):
-        """Account number"""
-        return self._data.get('contract', {}).get('accountNumber')
+        """Account number."""
+        return self._contract.get('accountNumber', '')
+
+    @property
+    def resource_type(self):
+        """Resource type."""
+        return self._contract.get('resourceType')
+
+    @property
+    def id(self):  # pylint: disable=invalid-name
+        """Id."""
+        return self._contract.get('id')
+
+    @property
+    def number(self):
+        """Number."""
+        return self._contract.get('contractNumber')
+
+    @property
+    def chid(self):
+        """CHID."""
+        return self._contract.get('chid')
+
+    @property
+    def status(self):
+        """Status."""
+        return self._contract.get('status')
+
+    @property
+    def is_blocked(self):
+        """Is blocked."""
+        return self._contract.get('isBlocked')
+
+    @property
+    def concerning(self):
+        """COncerning."""
+        return self._contract.get('concerning')
+
+    @property
+    def amount(self):
+        """Amount."""
+        return self._balance.get('amount')
+
+    @property
+    def currency_code(self):
+        """Currency code."""
+        return self._balance.get('currencyCode')
 
     @property
     def product(self):
-        """Product"""
+        """Product."""
         return self._data.get('product')
 
     @property
     def customer(self):
-        """Customer"""
-        return self._data.get('customer')
+        """Customer."""
+        return Customer(self._data.get('customer'))
 
     @property
-    def parent_contract(self):
-        """Parent Contract"""
-        return self._data.get('parentContract')
+    def parent_contract_id(self):
+        """Parent Contract."""
+        return self._data.get('parentContract', {}).get('id')
+
+    @property
+    def iban(self):
+        """Iban."""
+        return self.account_number
+
+    def _get_transactions(self, params=None):
+        if not self.iban:
+            self._logger.error('Account does not expose transactions')
+            return [], None
+        url = f'{self.contract.base_url}/mutations/{self.iban}'
+        headers = {'x-aab-serviceversion': 'v3'}
+        response = self.contract.session.get(url, headers=headers, params=params)
+        response.raise_for_status()
+        mutations_list = response.json().get('mutationsList', {})
+        last_mutation_key = mutations_list.get('lastMutationKey', None)
+        transactions = [AccountTransaction(data.get('mutation'))
+                        for data in mutations_list.get('mutations')]
+        return transactions, last_mutation_key
+
+    @property
+    def transactions(self):
+        """Transactions."""
+        transactions, last_mutation_key = self._get_transactions()
+        for transaction in transactions:
+            yield transaction
+        while last_mutation_key:
+            params = {'lastMutationKey': last_mutation_key}
+            transactions, last_mutation_key = self._get_transactions(params=params)
+            for transaction in transactions:
+                yield transaction
+
+    def get_latest_transactions(self):
+        """Retrieves the latest transactions.
+
+        Returns:
+            transactions (list): A list of transaction objects for the latest transactions
+
+        """
+        if not self.iban:
+            self._logger.error('Account does not expose transactions')
+            return []
+        url = f'{self.contract.base_url}/mutations/{self.iban}'
+        headers = {'x-aab-serviceversion': 'v3'}
+        response = self.contract.session.get(url, headers=headers)
+        response.raise_for_status()
+        return [AccountTransaction(data.get('mutation'))
+                for data in response.json().get('mutationsList', {}).get('mutations', [])]
 
 
-class AccountTransaction(Transaction):  # pylint: disable=too-many-public-methods
-    """Models a banking transaction"""
+class AccountTransaction(Transaction):
+    """Models a banking transaction."""
 
     @property
     def mutation_code(self):
-        """Mutation code"""
+        """Mutation code."""
         return self._data.get('mutationCode')
 
     @property
     def description(self):
-        """Description"""
+        """Description."""
         return ' '.join([self._clean_up(line.strip()) for line in self._data.get('descriptionLines', [])])
 
     @staticmethod
@@ -142,121 +315,106 @@ class AccountTransaction(Transaction):  # pylint: disable=too-many-public-method
 
     @property
     def transaction_date(self):
-        """Transaction date"""
+        """Transaction date."""
         return self._timestamp_to_date(self._data.get('transactionDate'))
 
     @property
     def value_date(self):
-        """Value date"""
+        """Value date."""
         return self._timestamp_to_date(self._data.get('valueDate'))
 
     @property
     def book_date(self):
-        """Book date"""
+        """Book date."""
         return self._timestamp_to_date(self._data.get('bookDate'))
 
     @property
     def balance_after_mutation(self):
-        """Balance after mutation"""
+        """Balance after mutation."""
         return self._data.get('balanceAfterMutation')
 
     @property
     def transaction_type(self):
-        """Transaction type"""
+        """Transaction type."""
         return self._data.get('debitCredit')
 
     @property
     def indicator_digital_invoice(self):
-        """Indicator digital invoice"""
+        """Indicator digital invoice."""
         return self._data.get('indicatorDigitalInvoice')
 
     @property
     def counter_account_number(self):
-        """Counter account number"""
+        """Counter account number."""
         return self._data.get('counterAccountNumber')
 
     @property
     def counter_account_type(self):
-        """Counter account type"""
+        """Counter account type."""
         return self._data.get('counterAccountType')
 
     @property
     def counter_account_name(self):
-        """Counter account name"""
+        """Counter account name."""
         return self._data.get('counterAccountName')
 
     @property
     def currency_iso_code(self):
-        """Currency iso code"""
+        """Currency iso code."""
         return self._data.get('currencyIsoCode')
 
     @property
     def source_inquiry_number(self):
-        """Source in inquiry number"""
+        """Source in inquiry number."""
         return self._data.get('sourceInquiryNumber')
 
     @property
     def account_number(self):
-        """Account number"""
+        """Account number."""
         return self._data.get('accountNumber')
 
     @property
     def account_number_type(self):
-        """Account number type"""
+        """Account number type."""
         return self._data.get('accountNumberType')
 
     @property
     def transaction_timestamp(self):
-        """Transaction timestamp"""
+        """Transaction timestamp."""
         return self._data.get('transactionTimestamp')
 
     @property
     def status_timestamp(self):
-        """Status timestamp"""
+        """Status timestamp."""
         return self._data.get('statusTimestamp')
 
     @property
     def amount(self):
-        """Amount"""
+        """Amount."""
         return float(self._data.get('amount'))
 
 
-class AbnAmroContract:  # pylint: disable=too-many-instance-attributes
-    """Models the service"""
+class Contract:  # pylint: disable=too-many-instance-attributes
+    """Models the service."""
 
-    def __init__(self, account_number, card_number, pin_number, url='https://www.abnamro.nl'):
+    def __init__(self, account_number, card_number, pin_number):
         self._logger = logging.getLogger(f'{LOGGER_BASENAME}.{self.__class__.__name__}')
         self.account_number = account_number
         self.card_number = card_number
         self.pin_number = pin_number
-        self._contracts = None
-        self._base_url = url
-        self._iban_number = None
-        self._host = parse_url(url).host
-        self._session = self._get_authenticated_session()
+        self._base_url = 'https://www.abnamro.nl'
+        self._accounts = None
+        self.session = self._get_authenticated_session()
 
     @property
-    def iban_number(self):
-        """Iban number"""
-        if self._iban_number is None:
-            contract = next((contract for contract in self.contracts
-                             if contract.number == self.account_number), None)
-            if not contract:
-                raise ValueError
-            self._iban_number = contract.account_number
-        return self._iban_number
+    def host(self):
+        """Host."""
+        return parse_url(self.base_url).host
 
     @property
-    def contracts(self):
-        """Contracts"""
-        if self._contracts is None:
-            url = f'{self._base_url}/contracts'
-            params = {'productGroups': 'PAYMENT_ACCOUNTS'}
-            headers = {'x-aab-serviceversion': 'v2'}
-            response = self._session.get(url, params=params, headers=headers)
-            response.raise_for_status()
-        self._contracts = [Contract(data) for data in response.json().get('contractList', [])]
-        return self._contracts
+    def base_url(self):
+        """Base url."""
+        return self._base_url
 
     def _get_authenticated_session(self):
         authenticator = AbnAmroAccountAuthenticator()
@@ -274,48 +432,34 @@ class AbnAmroContract:  # pylint: disable=too-many-instance-attributes
         url = args[0]
         self._logger.debug('Using patched get request for url %s', url)
         response = self.original_get(*args, **kwargs)
-        if not url.startswith(self._base_url):
+        if not url.startswith(self.base_url):
             self._logger.debug('Url "%s" requested is not from abn amro account api, passing through', url)
             return response
         if response.status_code == 401:
             self._logger.info('Expired session detected, trying to re authenticate!')
-            self._session = self._get_authenticated_session()
+            self.session = self._get_authenticated_session()
             response = self.original_get(*args, **kwargs)
         return response
 
-    def _get_transactions(self, params=None):
-        url = f'{self._base_url}/mutations/{self.iban_number}'
-        headers = {'x-aab-serviceversion': 'v3'}
-        response = self._session.get(url, headers=headers, params=params)
-        response.raise_for_status()
-        mutations_list = response.json().get('mutationsList', {})
-        last_mutation_key = mutations_list.get('lastMutationKey', None)
-        transactions = [AccountTransaction(data.get('mutation'))
-                        for data in mutations_list.get('mutations')]
-        return transactions, last_mutation_key
-
     @property
-    def transactions(self):
-        """Transactions"""
-        transactions, last_mutation_key = self._get_transactions()
-        for transaction in transactions:
-            yield transaction
-        while last_mutation_key:
-            params = {'lastMutationKey': last_mutation_key}
-            transactions, last_mutation_key = self._get_transactions(params=params)
-            for transaction in transactions:
-                yield transaction
+    def accounts(self):
+        """Accounts."""
+        if self._accounts is None:
+            url = f'{self.base_url}/contracts'
+            headers = {'x-aab-serviceversion': 'v2'}
+            response = self.session.get(url, headers=headers)
+            response.raise_for_status()
+            self._accounts = [Account(self, data) for data in response.json().get('contractList', [])]
+        return self._accounts
 
-    def get_latest_transactions(self):
-        """Retrieves the latest transactions
+    def get_account_by_iban(self, iban):
+        """Retrieves an account object by the provided IBAN.
+
+        Args:
+            iban (str): The iban to match the account with
 
         Returns:
-            transactions (list): A list of transaction objects for the latest transactions
+            account (Account): Account object on match, None otherwise
 
         """
-        url = f'{self._base_url}/mutations/{self.iban_number}'
-        headers = {'x-aab-serviceversion': 'v3'}
-        response = self._session.get(url, headers=headers)
-        response.raise_for_status()
-        return [AccountTransaction(data.get('mutation'))
-                for data in response.json().get('mutationsList', {}).get('mutations', [])]
+        return next((account for account in self.accounts if account.account_number.lower() == iban.lower()), None)

@@ -24,7 +24,7 @@
 #
 
 """
-Main code for core
+Main code for core.
 
 .. _Google Python Style Guide:
    http://google.github.io/styleguide/pyguide.html
@@ -62,7 +62,7 @@ PAGE_TRANSITION_WAIT = 120
 
 
 class AccountAuthenticator(abc.ABC):
-    """Implements an interface for an acount athenticator"""
+    """Implements an interface for an acount athenticator."""
 
     def __init__(self):
         self._logger = logging.getLogger(f'{LOGGER_BASENAME}.{self.__class__.__name__}')
@@ -89,11 +89,11 @@ class AccountAuthenticator(abc.ABC):
 
     @abc.abstractmethod
     def authenticate(self, *args, **kwargs):
-        """Should implement the authentication business logic"""
+        """Should implement the authentication business logic."""
         pass
 
     def get_authenticated_session(self):
-        """Retrieves a requests compatible authentication session
+        """Retrieves a requests compatible authentication session.
 
         Returns:
             session (Session): The authenticated session
@@ -113,13 +113,13 @@ class AccountAuthenticator(abc.ABC):
         return session
 
     def quit(self):
-        """Quits the headless browser"""
+        """Quits the headless browser."""
         self._logger.info('Closing chrome')
         self._driver.quit()
 
 
-class Transaction(abc.ABC):
-    """Interface for a transaction object"""
+class Comparable(abc.ABC):
+    """Interface for something that can be comparable based on a _data internal attribute."""
 
     def __init__(self, data):
         self._logger = logging.getLogger(f'{LOGGER_BASENAME}.{self.__class__.__name__}')
@@ -129,40 +129,21 @@ class Transaction(abc.ABC):
         return hash(str(self._data))
 
     def __eq__(self, other):
-        """Override the default equals behavior"""
+        """Override the default equals behavior."""
         if not isinstance(other, self.__class__):
-            raise ValueError('Not a Transaction object')
+            raise ValueError(f'Not a {self.__class__.__name__} object')
         return hash(self) == hash(other)
 
     def __ne__(self, other):
-        """Override the default unequal behavior"""
+        """Override the default unequal behavior."""
         if not isinstance(other, self.__class__):
-            raise ValueError('Not a Transaction object')
+            raise ValueError(f'Not a {self.__class__.__name__} object')
         return hash(self) != hash(other)
+
+
+class Transaction(Comparable):  #  pylint: disable=too-few-public-methods
+    """Interface for a transaction object."""
 
     @staticmethod
     def _clean_up(string):
         return " ".join(string.split())
-
-
-class Account(abc.ABC):
-    """Interface for an account object"""
-
-    def __init__(self, data):
-        self._logger = logging.getLogger(f'{LOGGER_BASENAME}.{self.__class__.__name__}')
-        self._data = data
-
-    def __hash__(self):
-        return hash(str(self._data))
-
-    def __eq__(self, other):
-        """Override the default equals behavior"""
-        if not isinstance(other, self.__class__):
-            raise ValueError('Not a Account object')
-        return hash(self) == hash(other)
-
-    def __ne__(self, other):
-        """Override the default unequal behavior"""
-        if not isinstance(other, self.__class__):
-            raise ValueError('Not a Account object')
-        return hash(self) != hash(other)
