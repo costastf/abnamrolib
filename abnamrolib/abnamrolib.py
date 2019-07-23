@@ -314,22 +314,27 @@ class MortgageAccount(Comparable):
 
     @property
     def full_amount(self):
+        """Full amount."""
         return self._data.get('leningdelen', [{}])[0].get('oorspronkelijkHypotheekbedrag')
 
     @property
     def remaining_amount(self):
+        """Remaining amount."""
         return self._data.get('totaalResterendHypotheekbedrag')
 
     @property
     def remaining_months(self):
+        """Remaining months."""
         return self._data.get('leningdelen', [{}])[0].get('restantLooptijdInMaanden')
 
     @property
     def monthly_amount(self):
+        """Monthly amount."""
         return self._data.get('leningdelen', [{}])[0].get('brutoMaandlast')
 
     @property
     def mortgage_type(self):
+        """Mortgage type."""
         return self._data.get('leningdelen', [{}])[0].get('hypotheeksoort')
 
 
@@ -502,6 +507,15 @@ class Contract:  # pylint: disable=too-many-instance-attributes
         return next((account for account in self.accounts if account.account_number.lower() == iban.lower()), None)
 
     def get_mortgage_account(self, account_number):
+        """Retireves a mortgage account by account number.
+
+        Args:
+            account_number (str): The account number of the mortgage account to match
+
+        Returns:
+            account (MortgageAccount): A MortgageAccount object on success, None otherwise
+
+        """
         return next((MortgageAccount(self, account)
                      for account in self.accounts
                      if all([account.product.group == 'MORTGAGE',
