@@ -37,3 +37,9 @@ History
 ------------------
 
 * Exposed actually existing attribute
+
+
+1.0.0 (24-07-2019)
+------------------
+
+* Initial working version with accounts, foreign accounts and transaction retrieval.
