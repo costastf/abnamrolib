@@ -353,6 +353,8 @@ class AccountTransaction(Transaction):
 
     @staticmethod
     def _timestamp_to_date(timestamp):
+        if timestamp is None:
+            return None
         return date.fromtimestamp(int(timestamp) / 1000)
 
     @property
@@ -507,7 +509,7 @@ class Contract:  # pylint: disable=too-many-instance-attributes
         return next((account for account in self.accounts if account.account_number.lower() == iban.lower()), None)
 
     def get_mortgage_account(self, account_number):
-        """Retireves a mortgage account by account number.
+        """Retrieves a mortgage account by account number.
 
         Args:
             account_number (str): The account number of the mortgage account to match
