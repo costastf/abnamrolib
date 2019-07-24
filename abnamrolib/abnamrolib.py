@@ -329,8 +329,8 @@ class ForeignAccount(Comparable):
         """Get transactions from foreign account."""
         response = self.contract.session.get(self._transactions_url)
         response.raise_for_status()
-        return [ForeignAccountTransaction(data.get('transaction')) for data in
-                response.json().get('transactionList').get('transactions')]
+        return [ForeignAccountTransaction(data.get('transaction', {})) for data in
+                response.json().get('transactionList', {}).get('transactions', [{}])]
 
 
 class MortgageAccount(Comparable):
