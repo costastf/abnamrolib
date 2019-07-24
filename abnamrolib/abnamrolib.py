@@ -45,7 +45,7 @@ __author__ = '''Costas Tyfoxylos <costas.tyf@gmail.com>'''
 __docformat__ = '''google'''
 __date__ = '''19-07-2019'''
 __copyright__ = '''Copyright 2019, Costas Tyfoxylos'''
-__credits__ = ["Costas Tyfoxylos"]
+__credits__ = ["Costas Tyfoxylos", "Gareth Hawker"]
 __license__ = '''MIT'''
 __maintainer__ = '''Costas Tyfoxylos'''
 __email__ = '''<costas.tyf@gmail.com>'''
@@ -219,7 +219,7 @@ class Account(Comparable):
 
     @property
     def concerning(self):
-        """COncerning."""
+        """Concerning."""
         return self._contract.get('concerning')
 
     @property
@@ -294,6 +294,43 @@ class Account(Comparable):
         response.raise_for_status()
         return [AccountTransaction(data.get('mutation'))
                 for data in response.json().get('mutationsList', {}).get('mutations', [])]
+
+
+class ForeignAccount(Comparable):
+    """Models an account foreign to ABNAmro."""
+
+    def __init__(self, contract, data):
+        super().__init__(data)
+        self._data = data
+        self.contract = contract
+        self._transactions_url = self._account.get('_links').get('transactions').get('href')
+
+    @property
+    def _account(self):
+        return self._data.get('account')
+
+    @property
+    def account_number(self):
+        """Account number."""
+        return self._account.get('accountNumber')
+
+    @property
+    def iban(self):
+        """iban."""
+        return self._account.get('accountNumber')
+
+    @property
+    def transactions(self):
+        """Transactions."""
+        for transaction in self.get_latest_transactions():
+            yield transaction
+
+    def get_latest_transactions(self):
+        """Get transactions from foreign account."""
+        response = self.contract.session.get(self._transactions_url)
+        response.raise_for_status()
+        return [ForeignAccountTransaction(data.get('transaction')) for data in
+                response.json().get('transactionList').get('transactions')]
 
 
 class MortgageAccount(Comparable):
@@ -438,6 +475,15 @@ class AccountTransaction(Transaction):
         return float(self._data.get('amount'))
 
 
+class ForeignAccountTransaction(AccountTransaction):
+    """Models a transaction foreign to ABNAmro."""
+
+    @property
+    def description(self):
+        """Description."""
+        return ' '.join([self._clean_up(line.strip()) for line in self._data.get('description', [])])
+
+
 class Contract:  # pylint: disable=too-many-instance-attributes
     """Models the service."""
 
@@ -494,7 +540,16 @@ class Contract:  # pylint: disable=too-many-instance-attributes
             response = self.session.get(url, headers=headers)
             response.raise_for_status()
             self._accounts = [Account(self, data) for data in response.json().get('contractList', [])]
+            self._accounts.extend(self._get_foreign_accounts())
         return self._accounts
+
+    def _get_foreign_accounts(self):
+        url = f'{self.base_url}/mul/accounts/v1'
+        response = self.session.get(url)
+        if response.status_code == 403:
+            self._logger.info('No foreign accounts enabled on this account')
+            return []
+        return [ForeignAccount(self, data) for data in response.json().get('accounts')]
 
     def get_account_by_iban(self, iban):
         """Retrieves an account object by the provided IBAN.
