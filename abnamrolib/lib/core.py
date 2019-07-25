@@ -130,14 +130,14 @@ class Comparable(abc.ABC):
 
     def __eq__(self, other):
         """Override the default equals behavior."""
-        if not isinstance(other, self.__class__):
-            raise ValueError(f'Not a {self.__class__.__name__} object')
+        if not isinstance(other, Comparable):
+            raise ValueError(f'Not a Comparable object')
         return hash(self) == hash(other)
 
     def __ne__(self, other):
         """Override the default unequal behavior."""
-        if not isinstance(other, self.__class__):
-            raise ValueError(f'Not a {self.__class__.__name__} object')
+        if not isinstance(other, Comparable):
+            raise ValueError(f'Not a Comparable object')
         return hash(self) != hash(other)
 
 
