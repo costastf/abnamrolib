@@ -49,3 +49,9 @@ History
 ------------------
 
 * made credit card a Comparable
+
+
+1.0.2 (25-07-2019)
+------------------
+
+* Generalized the comparison of Comparable objects
