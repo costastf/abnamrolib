@@ -43,3 +43,9 @@ History
 ------------------
 
 * Initial working version with accounts, foreign accounts and transaction retrieval.
+
+
+1.0.1 (25-07-2019)
+------------------
+
+* made credit card a Comparable
