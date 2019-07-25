@@ -381,7 +381,7 @@ class CreditCardTransaction(Transaction):
         return self._data.get('chargeBackAllowed')
 
 
-class CreditCard:  # pylint: disable=too-many-instance-attributes
+class CreditCard(Comparable):  # pylint: disable=too-many-instance-attributes
     """Models a credit card account."""
 
     def __init__(self, username, password):
@@ -393,6 +393,7 @@ class CreditCard:  # pylint: disable=too-many-instance-attributes
         self._account_number = None
         self._periods = None
         self._account = None
+        super().__init__(self.account._data)  # pylint: disable=protected-access
 
     @property
     def host(self):
