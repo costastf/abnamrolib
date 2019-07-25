@@ -483,6 +483,10 @@ class ForeignAccountTransaction(AccountTransaction):
         """Description."""
         return ' '.join([self._clean_up(line.strip()) for line in self._data.get('description', [])])
 
+    @property
+    def counter_account_name(self):
+        """Counter account name."""
+        return self._data.get('holder', {}).get('name', '')
 
 class Contract:  # pylint: disable=too-many-instance-attributes
     """Models the service."""
