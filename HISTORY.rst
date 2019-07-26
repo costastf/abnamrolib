@@ -55,3 +55,9 @@ History
 ------------------
 
 * Generalized the comparison of Comparable objects
+
+
+2.0.0 (26-07-2019)
+------------------
+
+* Implemented a credit card contract to make credit cards compatible with bank accounts
