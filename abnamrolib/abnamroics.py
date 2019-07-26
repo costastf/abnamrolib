@@ -55,8 +55,13 @@ LOGGER = logging.getLogger(LOGGER_BASENAME)
 LOGGER.addHandler(logging.NullHandler())
 
 
-class Account(Comparable):  # pylint: disable=too-many-public-methods
+class CreditCardAccount(Comparable):  # pylint: disable=too-many-public-methods
     """Models a credit card account."""
+
+    def __init__(self, contract, data):
+        super().__init__(data)
+        self._contract = contract
+        self._periods = None
 
     @property
     def number(self):
@@ -213,12 +218,82 @@ class Account(Comparable):  # pylint: disable=too-many-public-methods
         """Over limit."""
         return self._data.get('overLimit')
 
+    def get_period(self, year, month):
+        """Get a period.
+
+        Args:
+            year (str): The year of the period to retrieve
+            month (str): The month of the period to retrieve
+
+        Returns:
+            period (Period): The period for the provided date
+
+        """
+        return next((period for period in self.periods
+                     if period.period == f'{year}-{month.zfill(2)}'), None)
+
+    def get_transactions_for_period(self, year, month):
+        """Retrieves the transactions for that period.
+
+        Args:
+            year (str): The year to retrieve transactions for
+            month (str): The month to retrieve transactions for
+
+        Returns:
+            transactions (list): A list of transaction objects for the provided period
+
+        """
+        period_ = self.get_period(year, month)
+        if not period_:
+            return []
+        return period_.transactions
+
+    @property
+    def transactions(self):
+        """Transactions.
+
+        Returns:
+            transaction (Transaction): Every available transaction
+
+        """
+        for period in self.periods:
+            for transaction in period.transactions:
+                yield transaction
+
+    def get_current_period_transactions(self):
+        """Retrieves transactions for the current period.
+
+        Returns:
+            transactions (list): A list of transaction object for the current period
+
+        """
+        url = f'{self._contract.base_url}/sec/nl/sec/transactions'
+        params = {'accountNumber': self.number,
+                  'flushCache': True}
+        response = self._contract.session.get(url, params=params)
+        response.raise_for_status()
+        return [CreditCardTransaction(data)
+                for data in response.json()]
+
+    @property
+    def periods(self):
+        """Payment periods."""
+        if self._periods is None:
+            url = f'{self._contract.base_url}/sec/nl/sec/periods'
+            params = {'accountNumber': self.number}
+            response = self._contract.session.get(url, params=params)
+            response.raise_for_status()
+            self._periods = [Period(self._contract, self, data)
+                             for data in response.json()]
+        return self._periods
+
 
 class Period:
     """Models the payment period."""
 
-    def __init__(self, credit_card, data):
-        self._credit_card = credit_card
+    def __init__(self, contract, account, data):
+        self._contract = contract
+        self._account = account
         self._data = data
         self._transactions = None
 
@@ -266,12 +341,12 @@ class Period:
 
         """
         if self._transactions is None:
-            url = f'{self._credit_card.base_url}/sec/nl/sec/transactions'
-            params = {'accountNumber': self._credit_card.account_number,
+            url = f'{self._contract.base_url}/sec/nl/sec/transactions'
+            params = {'accountNumber': self._account.number,
                       'flushCache': True,
                       'fromPeriod': self.period,
                       'untilPeriod': self.period}
-            response = self._credit_card.session.get(url, params=params)
+            response = self._contract.session.get(url, params=params)
             response.raise_for_status()
             self._transactions = [CreditCardTransaction(data) for data in response.json()]
         return self._transactions
@@ -381,7 +456,7 @@ class CreditCardTransaction(Transaction):
         return self._data.get('chargeBackAllowed')
 
 
-class CreditCard(Comparable):  # pylint: disable=too-many-instance-attributes
+class CreditCardContract:
     """Models a credit card account."""
 
     def __init__(self, username, password):
@@ -390,10 +465,7 @@ class CreditCard(Comparable):  # pylint: disable=too-many-instance-attributes
         self._password = password
         self._base_url = 'https://www.icscards.nl'
         self.session = self._get_authenticated_session()
-        self._account_number = None
-        self._periods = None
-        self._account = None
-        super().__init__(self.account._data)  # pylint: disable=protected-access
+        self._accounts = None
 
     @property
     def host(self):
@@ -443,92 +515,42 @@ class CreditCard(Comparable):  # pylint: disable=too-many-instance-attributes
         return session.cookies.get('XSRF-TOKEN')
 
     @property
-    def account_number(self):
-        """Account number in Iban format."""
-        if not self._account_number:
+    def accounts(self):
+        """Accounts."""
+        if self._accounts is None:
             url = f'{self.base_url}/sec/nl/sec/allaccountsv2'
             self._logger.debug('Trying to get all accounts from url "%s"', url)
             response = self.session.get(url)
             response.raise_for_status()
-            self._account_number = response.json()[0].get('accountNumber')
-        return self._account_number
+            self._accounts = [CreditCardAccount(self, self._get_account_data(data.get('accountNumber')))
+                              for data in response.json()]
+        return self._accounts
 
-    @property
-    def periods(self):
-        """Payment periods."""
-        if self._periods is None:
-            url = f'{self.base_url}/sec/nl/sec/periods'
-            params = {'accountNumber': self.account_number}
-            response = self.session.get(url, params=params)
-            response.raise_for_status()
-            self._periods = [Period(self, data)
-                             for data in response.json()]
-        return self._periods
-
-    @property
-    def account(self):
-        """Account."""
-        if self._account is None:
-            url = f'{self.base_url}/sec/nl/sec/accountv5'
-            params = {'accountNumber': self.account_number}
-            response = self.session.get(url, params=params)
-            response.raise_for_status()
-            self._account = Account(response.json())
-        return self._account
-
-    def get_period(self, year, month):
-        """Get a period.
-
-        Args:
-            year (str): The year of the period to retrieve
-            month (str): The month of the period to retrieve
-
-        Returns:
-            period (Period): The period for the provided date
-
-        """
-        return next((period for period in self.periods
-                     if period.period == f'{year}-{month.zfill(2)}'), None)
-
-    def get_transactions_for_period(self, year, month):
-        """Retrieves the transactions for that period.
-
-        Args:
-            year (str): The year to retrieve transactions for
-            month (str): The month to retrieve transactions for
-
-        Returns:
-            transactions (list): A list of transaction objects for the provided period
-
-        """
-        period_ = self.get_period(year, month)
-        if not period_:
-            return []
-        return period_.transactions
-
-    @property
-    def transactions(self):
-        """Transactions.
-
-        Returns:
-            transaction (Transaction): Every available transaction
-
-        """
-        for period in self.periods:
-            for transaction in period.transactions:
-                yield transaction
-
-    def get_current_period_transactions(self):
-        """Retrieves transactions for the current period.
-
-        Returns:
-            transactions (list): A list of transaction object for the current period
-
-        """
-        url = f'{self.base_url}/sec/nl/sec/transactions'
-        params = {'accountNumber': self.account_number,
-                  'flushCache': True}
+    def _get_account_data(self, account_number):
+        url = f'{self.base_url}/sec/nl/sec/accountv5'
+        params = {'accountNumber': account_number}
         response = self.session.get(url, params=params)
         response.raise_for_status()
-        return [CreditCardTransaction(data)
-                for data in response.json()]
+        return response.json()
+
+    def get_account_by_number(self, account_number):
+        """Retrieves an account.
+
+        Args:
+            account_number: The account number to retrieve.
+
+        Returns:
+            account (Account): The account object if found, None otherwise.
+
+        """
+        return next((account for account in self.accounts
+                     if str(account.number) == str(account_number)), None)
+
+    def get_default_account(self):
+        """Retrieves the first account.
+
+        Returns:
+           account (Account): The first account object if found.
+
+        """
+        return self.accounts[0]

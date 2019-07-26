@@ -32,8 +32,9 @@ Import all parts from abnamrolib here
    http://google.github.io/styleguide/pyguide.html
 """
 from ._version import __version__
-from .abnamrolib import Contract, Account, AccountTransaction
-from .abnamroics import CreditCard, CreditCardTransaction
+from .abnamrolib import AccountContract, Account, AccountTransaction
+from .abnamroics import CreditCardContract, CreditCardAccount, CreditCardTransaction
+from .lib.core import Comparable
 
 __author__ = '''Costas Tyfoxylos <costas.tyf@gmail.com>'''
 __docformat__ = '''google'''
@@ -47,8 +48,10 @@ __status__ = '''Development'''  # "Prototype", "Development", "Production".
 # This is to 'use' the module(s), so lint doesn't complain
 assert __version__
 
-assert Contract
-assert CreditCard
 assert Account
+assert AccountContract
+assert CreditCardContract
+assert CreditCardAccount
 assert AccountTransaction
 assert CreditCardTransaction
+assert Comparable

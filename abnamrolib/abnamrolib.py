@@ -488,7 +488,8 @@ class ForeignAccountTransaction(AccountTransaction):
         """Counter account name."""
         return self._data.get('holder', {}).get('name', '')
 
-class Contract:  # pylint: disable=too-many-instance-attributes
+
+class AccountContract:  # pylint: disable=too-many-instance-attributes
     """Models the service."""
 
     def __init__(self, account_number, card_number, pin_number):
