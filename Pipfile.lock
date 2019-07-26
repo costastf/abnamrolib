@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "6f35414ab7d094965ff0d74426381f9404e53043cabca434b55cae57ca774dc7"
+            "sha256": "230a139a4363f44c7ff7a3af8e003e5836e27a3a05ba5998c967230a944a138f"
         },
         "pipfile-spec": 6,
         "requires": {},
@@ -14,6 +14,13 @@
         ]
     },
     "default": {
+        "bankinterfaceslib": {
+            "hashes": [
+                "sha256:206cc8c69b93285ea92af54af59ed386e006a46422eb98f18d05dd7f4f8e605d"
+            ],
+            "index": "pypi",
+            "version": "==0.2.0"
+        },
         "certifi": {
             "hashes": [
                 "sha256:046832c04d4e752f37383b628bc601a7ea7211496b4638f6514d0e5b9acc4939",
@@ -35,14 +42,6 @@
             ],
             "version": "==0.4.1"
         },
-        "coloredlogs": {
-            "hashes": [
-                "sha256:34fad2e342d5a559c31b6c889e8d14f97cb62c47d9a2ae7b5ed14ea10a79eff8",
-                "sha256:b869a2dda3fa88154b9dd850e27828d8755bfab5a838a1c97fbc850c6e377c36"
-            ],
-            "index": "pypi",
-            "version": "==10.0"
-        },
         "configparser": {
             "hashes": [
                 "sha256:8be81d89d6e7b4c0d4e44bcc525845f6da25821de80cb5e06e7e0238a2899e32",
@@ -56,13 +55,6 @@
                 "sha256:8edcadb7f197e25f2cc094aec5bf7f1b6001d3f76c82d56f8d46f6fb1405554f"
             ],
             "version": "==0.2.0"
-        },
-        "humanfriendly": {
-            "hashes": [
-                "sha256:23057b10ad6f782e7bc3a20e3cb6768ab919f619bbdc0dd75691121bbde5591d",
-                "sha256:33ee8ceb63f1db61cce8b5c800c531e1a61023ac5488ccde2ba574a85be00a85"
-            ],
-            "version": "==4.18"
         },
         "idna": {
             "hashes": [
@@ -98,7 +90,6 @@
             "hashes": [
                 "sha256:4e3f522f937fd6ab246d63ee06612287bc122b70bb6034266459de86953b8645"
             ],
-            "index": "pypi",
             "version": "==1.8.2"
         }
     },
@@ -532,7 +523,6 @@
                 "sha256:ae3258c5249493cebe73cb4e18253a41ed69262484bad36fdb3efcb8ad8870bb",
                 "sha256:b52bf5833ed01c7b5c5fb73a7f71b3d98d48e9b9b8764236237bdc7ecae850fc"
             ],
-            "markers": "sys_platform != 'win32'",
             "version": "==1.12.14"
         },
         "six": {

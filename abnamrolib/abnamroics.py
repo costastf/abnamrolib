@@ -33,10 +33,10 @@ Main code for abnamrolib.
 
 import logging
 
+from bankinterfaceslib import Contract, Comparable, Transaction
 from requests import Session
 from urllib3.util import parse_url
 
-from abnamrolib.lib.core import Transaction, Comparable
 from abnamrolib.abnamrolibexceptions import AuthenticationFailed
 
 __author__ = '''Costas Tyfoxylos <costas.tyf@gmail.com>'''
@@ -55,7 +55,7 @@ LOGGER = logging.getLogger(LOGGER_BASENAME)
 LOGGER.addHandler(logging.NullHandler())
 
 
-class CreditCardAccount(Comparable):  # pylint: disable=too-many-public-methods
+class CreditCard(Comparable):  # pylint: disable=too-many-public-methods
     """Models a credit card account."""
 
     def __init__(self, contract, data):
@@ -456,7 +456,7 @@ class CreditCardTransaction(Transaction):
         return self._data.get('chargeBackAllowed')
 
 
-class CreditCardContract:
+class CreditCardContract(Contract):
     """Models a credit card account."""
 
     def __init__(self, username, password):
@@ -522,7 +522,7 @@ class CreditCardContract:
             self._logger.debug('Trying to get all accounts from url "%s"', url)
             response = self.session.get(url)
             response.raise_for_status()
-            self._accounts = [CreditCardAccount(self, self._get_account_data(data.get('accountNumber')))
+            self._accounts = [CreditCard(self, self._get_account_data(data.get('accountNumber')))
                               for data in response.json()]
         return self._accounts
 
@@ -532,6 +532,18 @@ class CreditCardContract:
         response = self.session.get(url, params=params)
         response.raise_for_status()
         return response.json()
+
+    def get_account(self, id_=None):
+        """Retrieves the account by the provided id.
+
+        Args:
+            id_ (str): The account number to retrieve the account for
+
+        Returns:
+            account (Account): The account if it exists, None otherwise.
+
+        """
+        return self.get_account_by_number(id_) if id_ else self.get_default_account()
 
     def get_account_by_number(self, account_number):
         """Retrieves an account.

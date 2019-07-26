@@ -35,10 +35,10 @@ import logging
 from datetime import date
 from time import sleep
 
+from bankinterfaceslib import AccountAuthenticator, Comparable, Transaction, Contract
 from selenium.common.exceptions import TimeoutException
 from urllib3.util import parse_url
 
-from abnamrolib.lib.core import AccountAuthenticator, Comparable, Transaction
 from abnamrolib.abnamrolibexceptions import AuthenticationFailed
 
 __author__ = '''Costas Tyfoxylos <costas.tyf@gmail.com>'''
@@ -489,7 +489,7 @@ class ForeignAccountTransaction(AccountTransaction):
         return self._data.get('holder', {}).get('name', '')
 
 
-class AccountContract:  # pylint: disable=too-many-instance-attributes
+class AccountContract(Contract):  # pylint: disable=too-many-instance-attributes
     """Models the service."""
 
     def __init__(self, account_number, card_number, pin_number):
@@ -556,6 +556,18 @@ class AccountContract:  # pylint: disable=too-many-instance-attributes
             return []
         return [ForeignAccount(self, data) for data in response.json().get('accounts')]
 
+    def get_account(self, id_):
+        """Retrieves the account by the provided id.
+
+        Args:
+            id_ (str): The iban to retrieve the account for
+
+        Returns:
+            account (Account): The account if it exists, None otherwise.
+
+        """
+        return self.get_account_by_iban(id_)
+
     def get_account_by_iban(self, iban):
         """Retrieves an account object by the provided IBAN.
 
@@ -566,7 +578,8 @@ class AccountContract:  # pylint: disable=too-many-instance-attributes
             account (Account): Account object on match, None otherwise
 
         """
-        return next((account for account in self.accounts if account.account_number.lower() == iban.lower()), None)
+        return next((account for account in self.accounts
+                     if account.account_number.lower() == iban.lower()), None)
 
     def get_mortgage_account(self, account_number):
         """Retrieves a mortgage account by account number.
