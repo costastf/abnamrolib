@@ -97,3 +97,9 @@ History
 ------------------
 
 * Extended logging
+
+
+3.0.6 (28-07-2019)
+------------------
+
+* Updated dependencies
