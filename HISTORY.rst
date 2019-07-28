@@ -115,3 +115,9 @@ History
 ------------------
 
 * Updated logging
+
+
+3.0.9 (28-07-2019)
+------------------
+
+* Removed unneeded logging
