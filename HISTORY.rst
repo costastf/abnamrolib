@@ -67,3 +67,9 @@ History
 ------------------
 
 * Refactored code to use external dependency and implemented a contract interface standardizing the retrieval of accounts.
+
+
+3.0.1 (28-07-2019)
+------------------
+
+* Fixed session dropping issue
