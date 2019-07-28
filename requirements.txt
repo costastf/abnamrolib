@@ -8,6 +8,6 @@
 # Please use Pipfile to update the requirements.
 #
 backoff~=1.8.0
-bankinterfaceslib~=0.2.0
+bankinterfaceslib~=0.2.1
 requests~=2.22.0
 selenium~=3.141.0

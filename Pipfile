@@ -33,7 +33,7 @@ emoji = "~=0.5.1"
 
 [packages]
 
-bankinterfaceslib = "~=0.2.0"
+bankinterfaceslib = "~=0.2.1"
 requests = "~=2.22.0"
 selenium = "~=3.141.0"
 backoff = "~=1.8.0"
