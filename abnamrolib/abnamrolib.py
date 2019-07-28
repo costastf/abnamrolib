@@ -35,6 +35,7 @@ import logging
 from datetime import date
 from time import sleep
 
+import backoff
 import requests
 from bankinterfaceslib import AccountAuthenticator, Comparable, Transaction, Contract
 from selenium.common.exceptions import TimeoutException
@@ -333,7 +334,9 @@ class ForeignAccount(Comparable):
     def get_latest_transactions(self):
         """Get transactions from foreign account."""
         response = self.contract.session.get(self._transactions_url)
-        response.raise_for_status()
+        if not response.ok:
+            self._logger.warning('Error retrieving transactions for account "%s"', self.account_number)
+            return []
         return [ForeignAccountTransaction(data.get('transaction', {})) for data in
                 response.json().get('transactionList', {}).get('transactions', [{}])]
 
@@ -349,9 +352,11 @@ class MortgageAccount(Comparable):
         super().__init__(self._data)
 
     def _get_data(self):
-        url = f'https://www.abnamro.nl/nl/havikonline/service/api/v1/Hypotheek/{self.account.number}'
+        url = f'{self.contract.base_url}/nl/havikonline/service/api/v1/Hypotheek/{self.account.number}'
         response = self.contract.session.get(url)
-        response.raise_for_status()
+        if not response.ok:
+            self._logger.warning('Error retrieving data for mortgage account "%s"', self.account.number)
+            return {}
         return response.json()
 
     @property
@@ -528,6 +533,8 @@ class AccountContract(Contract):  # pylint: disable=too-many-instance-attributes
         session.get = self._patched_get
         return session
 
+    @backoff.on_exception(backoff.expo,
+                          requests.exceptions.RequestException)
     def _patched_get(self, *args, **kwargs):
         url = args[0]
         self._logger.debug('Using patched get request for url %s', url)
@@ -553,7 +560,9 @@ class AccountContract(Contract):  # pylint: disable=too-many-instance-attributes
             url = f'{self.base_url}/contracts'
             headers = {'x-aab-serviceversion': 'v2'}
             response = self.session.get(url, headers=headers)
-            response.raise_for_status()
+            if not response.ok:
+                self._logger.warning('Error retrieving accounts for contract')
+                return []
             self._accounts = [Account(self, data) for data in response.json().get('contractList', [])]
             self._accounts.extend(self._get_foreign_accounts())
         return self._accounts
@@ -563,6 +572,9 @@ class AccountContract(Contract):  # pylint: disable=too-many-instance-attributes
         response = self.session.get(url)
         if response.status_code == 403:
             self._logger.info('No foreign accounts enabled on this account')
+            return []
+        if not response.ok:
+            self._logger.warning('Could not get info on foreign accounts')
             return []
         return [ForeignAccount(self, data) for data in response.json().get('accounts')]
 
