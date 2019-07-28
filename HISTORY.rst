@@ -91,3 +91,9 @@ History
 ------------------
 
 * Removed unnecessary method call
+
+
+3.0.5 (28-07-2019)
+------------------
+
+* Extended logging
