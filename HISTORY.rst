@@ -79,3 +79,9 @@ History
 ------------------
 
 * Made error in retrieving non breaking
+
+
+3.0.3 (28-07-2019)
+------------------
+
+* Made retrieving of objects safe and implemented backoff for get methods
