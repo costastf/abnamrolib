@@ -33,6 +33,7 @@ Main code for abnamrolib.
 
 import logging
 
+import backoff
 import requests
 from requests import Session
 from bankinterfaceslib import Contract, Comparable, Transaction
@@ -275,8 +276,7 @@ class CreditCard(Comparable):  # pylint: disable=too-many-public-methods
         if not response.ok:
             self._logger.warning('Error retrieving transactions for account "%s"', self.number)
             return []
-        return [CreditCardTransaction(data)
-                for data in response.json()]
+        return [CreditCardTransaction(data) for data in response.json()]
 
     @property
     def periods(self):
@@ -497,6 +497,8 @@ class CreditCardContract(Contract):
         session.get = self._patched_get
         return session
 
+    @backoff.on_exception(backoff.expo,
+                          requests.exceptions.RequestException)
     def _patched_get(self, *args, **kwargs):
         url = args[0]
         self._logger.debug('Using patched get request for url %s', url)
@@ -534,7 +536,9 @@ class CreditCardContract(Contract):
             url = f'{self.base_url}/sec/nl/sec/allaccountsv2'
             self._logger.debug('Trying to get all accounts from url "%s"', url)
             response = self.session.get(url)
-            response.raise_for_status()
+            if not response.ok:
+                self._logger.warning('Error retrieving accounts for contract')
+                return []
             self._accounts = [CreditCard(self, self._get_account_data(data.get('accountNumber')))
                               for data in response.json()]
         return self._accounts
@@ -543,7 +547,9 @@ class CreditCardContract(Contract):
         url = f'{self.base_url}/sec/nl/sec/accountv5'
         params = {'accountNumber': account_number}
         response = self.session.get(url, params=params)
-        response.raise_for_status()
+        if not response.ok:
+            self._logger.warning('Error retrieving data for account "%s"', account_number)
+            return {}
         return response.json()
 
     def get_account(self, id_=None):
@@ -578,4 +584,8 @@ class CreditCardContract(Contract):
            account (Account): The first account object if found.
 
         """
-        return self.accounts[0]
+        try:
+            return self.accounts[0]
+        except IndexError:
+            self._logger.error('No accounts are retrieved to return the first.')
+            return None

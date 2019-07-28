@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "230a139a4363f44c7ff7a3af8e003e5836e27a3a05ba5998c967230a944a138f"
+            "sha256": "4d8b67307d995ba3a09ef83cd8e437b2993320af6ce69103f5e17429ead9682e"
         },
         "pipfile-spec": 6,
         "requires": {},
@@ -14,6 +14,14 @@
         ]
     },
     "default": {
+        "backoff": {
+            "hashes": [
+                "sha256:c7187f15339e775aec926dc6e5e42f8a3ad7d3c2b9a6ecae7b535000f70cd838",
+                "sha256:d340bb6f36d025c04214b8925112d8456970e5f28dda46e4f1133bf5c622cb0a"
+            ],
+            "index": "pypi",
+            "version": "==1.8.0"
+        },
         "bankinterfaceslib": {
             "hashes": [
                 "sha256:206cc8c69b93285ea92af54af59ed386e006a46422eb98f18d05dd7f4f8e605d"
