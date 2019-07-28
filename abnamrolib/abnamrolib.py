@@ -38,6 +38,7 @@ from time import sleep
 from bankinterfaceslib import AccountAuthenticator, Comparable, Transaction, Contract
 from selenium.common.exceptions import TimeoutException
 from urllib3.util import parse_url
+from requests.exceptions import ConnectionError
 
 from abnamrolib.abnamrolibexceptions import AuthenticationFailed
 
@@ -291,7 +292,9 @@ class Account(Comparable):
         url = f'{self.contract.base_url}/mutations/{self.iban}'
         headers = {'x-aab-serviceversion': 'v3'}
         response = self.contract.session.get(url, headers=headers)
-        response.raise_for_status()
+        if not response.ok:
+            self._logger.warning('Error retrieving transactions')
+            return []
         return [AccountTransaction(data.get('mutation'))
                 for data in response.json().get('mutationsList', {}).get('mutations', [])]
 
@@ -526,12 +529,17 @@ class AccountContract(Contract):  # pylint: disable=too-many-instance-attributes
     def _patched_get(self, *args, **kwargs):
         url = args[0]
         self._logger.debug('Using patched get request for url %s', url)
-        response = self.original_get(*args, **kwargs)
-        if not url.startswith(self.base_url):
-            self._logger.debug('Url "%s" requested is not from abn amro account api, passing through', url)
-            return response
-        if response.status_code == 401:
-            self._logger.info('Expired session detected, trying to re authenticate!')
+        try:
+            response = self.original_get(*args, **kwargs)
+            if not url.startswith(self.base_url):
+                self._logger.debug('Url "%s" requested is not from abn amro account api, passing through', url)
+                return response
+            if response.status_code == 401:
+                self._logger.info('Expired session detected, trying to re authenticate!')
+                self.session = self._get_authenticated_session()
+                response = self.original_get(*args, **kwargs)
+        except ConnectionError:
+            self._logger.info('Connection reset detected, trying to re authenticate!')
             self.session = self._get_authenticated_session()
             response = self.original_get(*args, **kwargs)
         return response
