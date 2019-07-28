@@ -35,10 +35,10 @@ import logging
 from datetime import date
 from time import sleep
 
+import requests
 from bankinterfaceslib import AccountAuthenticator, Comparable, Transaction, Contract
 from selenium.common.exceptions import TimeoutException
 from urllib3.util import parse_url
-from requests.exceptions import ConnectionError
 
 from abnamrolib.abnamrolibexceptions import AuthenticationFailed
 
@@ -538,7 +538,7 @@ class AccountContract(Contract):  # pylint: disable=too-many-instance-attributes
                 self._logger.info('Expired session detected, trying to re authenticate!')
                 self.session = self._get_authenticated_session()
                 response = self.original_get(*args, **kwargs)
-        except ConnectionError:
+        except requests.exceptions.ConnectionError:
             self._logger.info('Connection reset detected, trying to re authenticate!')
             self.session = self._get_authenticated_session()
             response = self.original_get(*args, **kwargs)

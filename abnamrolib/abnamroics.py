@@ -33,8 +33,9 @@ Main code for abnamrolib.
 
 import logging
 
-from bankinterfaceslib import Contract, Comparable, Transaction
+import requests
 from requests import Session
+from bankinterfaceslib import Contract, Comparable, Transaction
 from urllib3.util import parse_url
 
 from abnamrolib.abnamrolibexceptions import AuthenticationFailed
@@ -501,7 +502,7 @@ class CreditCardContract(Contract):
                 self._logger.info('Expired session detected, trying to re authenticate!')
                 self.session = self._get_authenticated_session()
                 response = self.original_get(*args, **kwargs)
-        except ConnectionError:
+        except requests.exceptions.ConnectionError:
             self._logger.info('Connection reset detected, trying to re authenticate!')
             self.session = self._get_authenticated_session()
             response = self.original_get(*args, **kwargs)
