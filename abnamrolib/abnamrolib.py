@@ -260,7 +260,9 @@ class Account(Comparable):
         url = f'{self.contract.base_url}/mutations/{self.iban}'
         headers = {'x-aab-serviceversion': 'v3'}
         response = self.contract.session.get(url, headers=headers, params=params)
-        response.raise_for_status()
+        if not response.ok:
+            self._logger.warning('Error retrieving transactions for account "%s"', self.account_number)
+            return [], None
         mutations_list = response.json().get('mutationsList', {})
         last_mutation_key = mutations_list.get('lastMutationKey', None)
         transactions = [AccountTransaction(data.get('mutation'))
@@ -293,7 +295,7 @@ class Account(Comparable):
         headers = {'x-aab-serviceversion': 'v3'}
         response = self.contract.session.get(url, headers=headers)
         if not response.ok:
-            self._logger.warning('Error retrieving transactions')
+            self._logger.warning('Error retrieving transactions for account "%s"', self.account_number)
             return []
         return [AccountTransaction(data.get('mutation'))
                 for data in response.json().get('mutationsList', {}).get('mutations', [])]

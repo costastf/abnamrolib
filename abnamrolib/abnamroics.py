@@ -272,7 +272,9 @@ class CreditCard(Comparable):  # pylint: disable=too-many-public-methods
         params = {'accountNumber': self.number,
                   'flushCache': True}
         response = self._contract.session.get(url, params=params)
-        response.raise_for_status()
+        if not response.ok:
+            self._logger.warning('Error retrieving transactions for account "%s"', self.number)
+            return []
         return [CreditCardTransaction(data)
                 for data in response.json()]
 
@@ -283,7 +285,9 @@ class CreditCard(Comparable):  # pylint: disable=too-many-public-methods
             url = f'{self._contract.base_url}/sec/nl/sec/periods'
             params = {'accountNumber': self.number}
             response = self._contract.session.get(url, params=params)
-            response.raise_for_status()
+            if not response.ok:
+                self._logger.warning('Error retrieving periods for account "%s"', self.number)
+                return []
             self._periods = [Period(self._contract, self, data)
                              for data in response.json()]
         return self._periods
@@ -293,6 +297,7 @@ class Period:
     """Models the payment period."""
 
     def __init__(self, contract, account, data):
+        self._logger = logging.getLogger(f'{LOGGER_BASENAME}.{self.__class__.__name__}')
         self._contract = contract
         self._account = account
         self._data = data
@@ -348,7 +353,9 @@ class Period:
                       'fromPeriod': self.period,
                       'untilPeriod': self.period}
             response = self._contract.session.get(url, params=params)
-            response.raise_for_status()
+            if not response.ok:
+                self._logger.warning('Error retrieving transactions for account "%s"', self._account.number)
+                return []
             self._transactions = [CreditCardTransaction(data) for data in response.json()]
         return self._transactions
 
