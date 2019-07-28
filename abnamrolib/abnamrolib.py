@@ -528,7 +528,6 @@ class AccountContract(Contract):  # pylint: disable=too-many-instance-attributes
         session = authenticator.get_authenticated_session()
         session.headers.update({'User-Agent': ('Mozilla/5.0 (Macintosh; Intel Mac OS X 10.14; rv:67.0)'
                                                'Gecko/20100101 Firefox/67.0')})
-        authenticator.quit()
         self.original_get = session.get
         session.get = self._patched_get
         return session
