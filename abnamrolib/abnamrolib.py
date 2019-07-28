@@ -81,14 +81,14 @@ class AbnAmroAccountAuthenticator(AccountAuthenticator):
 
         """
         try:
-            self._logger.info('Loading login page')
+            self._logger.debug('Loading login page')
             self._driver.get(url)
-            self._logger.info('Accepting cookies')
+            self._logger.debug('Accepting cookies')
             try:
                 self._click_on("//*[text()='Save cookie-level']")
             except TimeoutException:
                 self._logger.warning("Cookies window didn't pop up")
-            self._logger.info('Logging in')
+            self._logger.debug('Logging in')
             element = self._driver.find_element_by_xpath("//*[(@label='Identification code')]")
             element.click()
             self._driver.find_element_by_name('accountNumber').send_keys(account_number)
