@@ -85,3 +85,9 @@ History
 ------------------
 
 * Made retrieving of objects safe and implemented backoff for get methods
+
+
+3.0.4 (28-07-2019)
+------------------
+
+* Removed unnecessary method call
