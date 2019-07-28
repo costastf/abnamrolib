@@ -73,3 +73,9 @@ History
 ------------------
 
 * Fixed session dropping issue
+
+
+3.0.2 (28-07-2019)
+------------------
+
+* Made error in retrieving non breaking
