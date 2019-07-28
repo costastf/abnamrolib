@@ -511,6 +511,7 @@ class CreditCardContract(Contract):
                 self._logger.info('Expired session detected, trying to re authenticate!')
                 self.session = self._get_authenticated_session()
                 response = self.original_get(*args, **kwargs)
+                self._logger.info('Successfully re authenticated!')
         except requests.exceptions.ConnectionError:
             self._logger.info('Connection reset detected, trying to re authenticate!')
             self.session = self._get_authenticated_session()
