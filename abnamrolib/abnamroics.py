@@ -492,12 +492,17 @@ class CreditCardContract(Contract):
     def _patched_get(self, *args, **kwargs):
         url = args[0]
         self._logger.debug('Using patched get request for url %s', url)
-        response = self.original_get(*args, **kwargs)
-        if not url.startswith(self._base_url):
-            self._logger.debug('Url "%s" requested is not from credit card api, passing through', url)
-            return response
-        if 'USERNAME=unauthenticated' in response.url:
-            self._logger.info('Expired session detected, trying to re authenticate!')
+        try:
+            response = self.original_get(*args, **kwargs)
+            if not url.startswith(self._base_url):
+                self._logger.debug('Url "%s" requested is not from credit card api, passing through', url)
+                return response
+            if 'USERNAME=unauthenticated' in response.url:
+                self._logger.info('Expired session detected, trying to re authenticate!')
+                self.session = self._get_authenticated_session()
+                response = self.original_get(*args, **kwargs)
+        except ConnectionError:
+            self._logger.info('Connection reset detected, trying to re authenticate!')
             self.session = self._get_authenticated_session()
             response = self.original_get(*args, **kwargs)
         return response
