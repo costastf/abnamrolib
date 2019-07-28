@@ -103,3 +103,9 @@ History
 ------------------
 
 * Updated dependencies
+
+
+3.0.7 (28-07-2019)
+------------------
+
+* Added logging
