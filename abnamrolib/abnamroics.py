@@ -493,6 +493,7 @@ class CreditCardContract(Contract):
         session.headers.update({'X-XSRF-TOKEN': self._get_xsrf_token(session,
                                                                      self._username,
                                                                      self._password)})
+        self._logger.info('Successfully authenticated!')
         self.original_get = session.get
         session.get = self._patched_get
         return session
