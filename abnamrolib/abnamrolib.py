@@ -10,7 +10,6 @@
 #  rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
 #  sell copies of the Software, and to permit persons to whom the Software is
 #  furnished to do so, subject to the following conditions:
-#
 # The above copyright notice and this permission notice shall be included in
 #  all copies or substantial portions of the Software.
 #
@@ -164,13 +163,14 @@ class Product:
 
 
 class Account(Comparable):
-    """Models a contract."""
+    """Models an account."""
 
     def __init__(self, contract, data):
-        super().__init__(data)
         self._logger = logging.getLogger(f'{LOGGER_BASENAME}.{self.__class__.__name__}')
         self.contract = contract
         self._data = data
+        self._comparable_data = self._get_comparable_data()
+        super().__init__(data, self._comparable_data)
 
     @property
     def _contract(self):
@@ -295,15 +295,24 @@ class Account(Comparable):
         return [AccountTransaction(data.get('mutation'))
                 for data in response.json().get('mutationsList', {}).get('mutations', [])]
 
+    def _get_comparable_data(self):
+        """
+
+        Returns: comparable_data (dict): A dictionary of account data that should remain static
+
+        """
+        return {key: value for key, value in self._data.get('contract').items() if key != 'balance'}
+
 
 class ForeignAccount(Comparable):
     """Models an account foreign to ABNAmro."""
 
     def __init__(self, contract, data):
-        super().__init__(data)
         self._data = data
         self.contract = contract
         self._transactions_url = self._account.get('_links').get('transactions').get('href')
+        self._comparable_data = self._get_comparable_data()
+        super().__init__(data, self._comparable_data)
 
     @property
     def _account(self):
@@ -331,6 +340,14 @@ class ForeignAccount(Comparable):
         response.raise_for_status()
         return [ForeignAccountTransaction(data.get('transaction', {})) for data in
                 response.json().get('transactionList', {}).get('transactions', [{}])]
+
+    def _get_comparable_data(self):
+        """
+
+        Returns: comparable_data (dict): A dictionary of account data that should remain static
+
+        """
+        return {key: value for key, value in self._data.get('account').items() if key != '_links'}
 
 
 class MortgageAccount(Comparable):
@@ -377,6 +394,11 @@ class MortgageAccount(Comparable):
 
 class AccountTransaction(Transaction):
     """Models a banking transaction."""
+
+    def __init__(self, data):
+        self._data = data
+        self._comparable_data = self._get_comparable_data()
+        super().__init__(data, self._comparable_data)
 
     @property
     def mutation_code(self):
@@ -473,6 +495,14 @@ class AccountTransaction(Transaction):
     def amount(self):
         """Amount."""
         return float(self._data.get('amount'))
+
+    def _get_comparable_data(self):
+        """
+
+        Returns: comparable_data (dict): A dictionary of transaction data that should remain static
+
+        """
+        return {key: value for key, value in self._data.items() if key != 'statusTimestamp'}
 
 
 class ForeignAccountTransaction(AccountTransaction):

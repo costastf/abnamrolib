@@ -121,12 +121,13 @@ class AccountAuthenticator(abc.ABC):
 class Comparable(abc.ABC):
     """Interface for something that can be comparable based on a _data internal attribute."""
 
-    def __init__(self, data):
+    def __init__(self, data, comparable_data=None):
         self._logger = logging.getLogger(f'{LOGGER_BASENAME}.{self.__class__.__name__}')
         self._data = data
+        self._comparable_data = comparable_data
 
     def __hash__(self):
-        return hash(str(self._data))
+        return hash(str(self._comparable_data)) if self._comparable_data else hash(str(self._data))
 
     def __eq__(self, other):
         """Override the default equals behavior."""
