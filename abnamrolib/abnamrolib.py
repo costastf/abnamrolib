@@ -262,7 +262,11 @@ class Account(Comparable):
         headers = {'x-aab-serviceversion': 'v3'}
         response = self.contract.session.get(url, headers=headers, params=params)
         if not response.ok:
-            self._logger.warning('Error retrieving transactions for account "%s"', self.account_number)
+            self._logger.warning('Error retrieving transactions for account "%s" '
+                                 'error message was "%s" with status code "%s"',
+                                 self.account_number,
+                                 response.text,
+                                 response.status_code)
             return [], None
         mutations_list = response.json().get('mutationsList', {})
         last_mutation_key = mutations_list.get('lastMutationKey', None)
