@@ -274,7 +274,11 @@ class CreditCard(Comparable):  # pylint: disable=too-many-public-methods
                   'flushCache': True}
         response = self._contract.session.get(url, params=params)
         if not response.ok:
-            self._logger.warning('Error retrieving transactions for account "%s"', self.number)
+            self._logger.error('Error retrieving transactions for account "%s"'
+                               'response was : %s with status code : %s',
+                               self.number,
+                               response.text,
+                               response.status_code)
             return []
         return [CreditCardTransaction(data) for data in response.json()]
 
@@ -286,7 +290,11 @@ class CreditCard(Comparable):  # pylint: disable=too-many-public-methods
             params = {'accountNumber': self.number}
             response = self._contract.session.get(url, params=params)
             if not response.ok:
-                self._logger.warning('Error retrieving periods for account "%s"', self.number)
+                self._logger.error('Error retrieving periods for account "%s"'
+                                   'response was : %s with status code : %s',
+                                   self.number,
+                                   response.text,
+                                   response.status_code)
                 return []
             self._periods = [Period(self._contract, self, data)
                              for data in response.json()]
@@ -354,7 +362,11 @@ class Period:
                       'untilPeriod': self.period}
             response = self._contract.session.get(url, params=params)
             if not response.ok:
-                self._logger.warning('Error retrieving transactions for account "%s"', self._account.number)
+                self._logger.error('Error retrieving transactions for account "%s", '
+                                   'response was : %s with status code : %s',
+                                   self._account.number,
+                                   response.text,
+                                   response.status_code)
                 return []
             self._transactions = [CreditCardTransaction(data) for data in response.json()]
         return self._transactions
