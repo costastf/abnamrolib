@@ -121,3 +121,9 @@ History
 ------------------
 
 * Removed unneeded logging
+
+
+3.0.10 (30-07-2019)
+-------------------
+
+* Extended logging
