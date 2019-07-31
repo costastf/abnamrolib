@@ -40,6 +40,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions
 from selenium.webdriver.support.ui import WebDriverWait
 from webdriver_manager.chrome import ChromeDriverManager
+from collections import OrderedDict
 
 __author__ = '''Costas Tyfoxylos <costas.tyf@gmail.com>'''
 __docformat__ = '''google'''
@@ -124,7 +125,8 @@ class Comparable(abc.ABC):
     def __init__(self, data, comparable_data=None):
         self._logger = logging.getLogger(f'{LOGGER_BASENAME}.{self.__class__.__name__}')
         self._data = data
-        self._comparable_data = comparable_data
+        self._comparable_data = OrderedDict(sorted(comparable_data.items(),
+                                            key=lambda t: t[0])) if comparable_data else None
 
     def __hash__(self):
         return hash(str(self._comparable_data)) if self._comparable_data else hash(str(self._data))
