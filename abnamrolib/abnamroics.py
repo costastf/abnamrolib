@@ -66,6 +66,11 @@ class CreditCard(Comparable):  # pylint: disable=too-many-public-methods
         self._periods = None
 
     @property
+    def _comparable_attributes(self):
+        return ['number',
+                'product_id']
+
+    @property
     def number(self):
         """Number."""
         return self._data.get('accountNumber')
