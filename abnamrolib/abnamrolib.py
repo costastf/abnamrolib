@@ -368,6 +368,13 @@ class MortgageAccount(Comparable):
         self._data = self._get_data()
         super().__init__(self._data)
 
+    @property
+    def _comparable_attributes(self):
+        return ['full_amount',
+                'remaining_amount',
+                'remaining_months',
+                'monthly_amount']
+
     def _get_data(self):
         url = f'{self.contract.base_url}/nl/havikonline/service/api/v1/Hypotheek/{self.account.number}'
         response = self.contract.session.get(url)
