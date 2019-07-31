@@ -55,3 +55,75 @@ History
 ------------------
 
 * Generalized the comparison of Comparable objects
+
+
+2.0.0 (26-07-2019)
+------------------
+
+* Implemented a credit card contract to make credit cards compatible with bank accounts
+
+
+3.0.0 (26-07-2019)
+------------------
+
+* Refactored code to use external dependency and implemented a contract interface standardizing the retrieval of accounts.
+
+
+3.0.1 (28-07-2019)
+------------------
+
+* Fixed session dropping issue
+
+
+3.0.2 (28-07-2019)
+------------------
+
+* Made error in retrieving non breaking
+
+
+3.0.3 (28-07-2019)
+------------------
+
+* Made retrieving of objects safe and implemented backoff for get methods
+
+
+3.0.4 (28-07-2019)
+------------------
+
+* Removed unnecessary method call
+
+
+3.0.5 (28-07-2019)
+------------------
+
+* Extended logging
+
+
+3.0.6 (28-07-2019)
+------------------
+
+* Updated dependencies
+
+
+3.0.7 (28-07-2019)
+------------------
+
+* Added logging
+
+
+3.0.8 (28-07-2019)
+------------------
+
+* Updated logging
+
+
+3.0.9 (28-07-2019)
+------------------
+
+* Removed unneeded logging
+
+
+3.0.10 (30-07-2019)
+-------------------
+
+* Extended logging

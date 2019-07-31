@@ -34,10 +34,12 @@ import logging
 from datetime import date
 from time import sleep
 
+import backoff
+import requests
+from bankinterfaceslib import AccountAuthenticator, Comparable, Transaction, Contract
 from selenium.common.exceptions import TimeoutException
 from urllib3.util import parse_url
 
-from abnamrolib.lib.core import AccountAuthenticator, Comparable, Transaction
 from abnamrolib.abnamrolibexceptions import AuthenticationFailed
 
 __author__ = '''Costas Tyfoxylos <costas.tyf@gmail.com>'''
@@ -78,14 +80,14 @@ class AbnAmroAccountAuthenticator(AccountAuthenticator):
 
         """
         try:
-            self._logger.info('Loading login page')
+            self._logger.debug('Loading login page')
             self._driver.get(url)
-            self._logger.info('Accepting cookies')
+            self._logger.debug('Accepting cookies')
             try:
                 self._click_on("//*[text()='Save cookie-level']")
             except TimeoutException:
                 self._logger.warning("Cookies window didn't pop up")
-            self._logger.info('Logging in')
+            self._logger.debug('Logging in')
             element = self._driver.find_element_by_xpath("//*[(@label='Identification code')]")
             element.click()
             self._driver.find_element_by_name('accountNumber').send_keys(account_number)
@@ -259,7 +261,13 @@ class Account(Comparable):
         url = f'{self.contract.base_url}/mutations/{self.iban}'
         headers = {'x-aab-serviceversion': 'v3'}
         response = self.contract.session.get(url, headers=headers, params=params)
-        response.raise_for_status()
+        if not response.ok:
+            self._logger.warning('Error retrieving transactions for account "%s" '
+                                 'error message was "%s" with status code "%s"',
+                                 self.account_number,
+                                 response.text,
+                                 response.status_code)
+            return [], None
         mutations_list = response.json().get('mutationsList', {})
         last_mutation_key = mutations_list.get('lastMutationKey', None)
         transactions = [AccountTransaction(data.get('mutation'))
@@ -291,7 +299,9 @@ class Account(Comparable):
         url = f'{self.contract.base_url}/mutations/{self.iban}'
         headers = {'x-aab-serviceversion': 'v3'}
         response = self.contract.session.get(url, headers=headers)
-        response.raise_for_status()
+        if not response.ok:
+            self._logger.warning('Error retrieving transactions for account "%s"', self.account_number)
+            return []
         return [AccountTransaction(data.get('mutation'))
                 for data in response.json().get('mutationsList', {}).get('mutations', [])]
 
@@ -337,7 +347,9 @@ class ForeignAccount(Comparable):
     def get_latest_transactions(self):
         """Get transactions from foreign account."""
         response = self.contract.session.get(self._transactions_url)
-        response.raise_for_status()
+        if not response.ok:
+            self._logger.warning('Error retrieving transactions for account "%s"', self.account_number)
+            return []
         return [ForeignAccountTransaction(data.get('transaction', {})) for data in
                 response.json().get('transactionList', {}).get('transactions', [{}])]
 
@@ -361,9 +373,11 @@ class MortgageAccount(Comparable):
         super().__init__(self._data)
 
     def _get_data(self):
-        url = f'https://www.abnamro.nl/nl/havikonline/service/api/v1/Hypotheek/{self.account.number}'
+        url = f'{self.contract.base_url}/nl/havikonline/service/api/v1/Hypotheek/{self.account.number}'
         response = self.contract.session.get(url)
-        response.raise_for_status()
+        if not response.ok:
+            self._logger.warning('Error retrieving data for mortgage account "%s"', self.account.number)
+            return {}
         return response.json()
 
     @property
@@ -513,8 +527,13 @@ class ForeignAccountTransaction(AccountTransaction):
         """Description."""
         return ' '.join([self._clean_up(line.strip()) for line in self._data.get('description', [])])
 
+    @property
+    def counter_account_name(self):
+        """Counter account name."""
+        return self._data.get('holder', {}).get('name', '')
 
-class Contract:  # pylint: disable=too-many-instance-attributes
+
+class AccountContract(Contract):  # pylint: disable=too-many-instance-attributes
     """Models the service."""
 
     def __init__(self, account_number, card_number, pin_number):
@@ -543,20 +562,27 @@ class Contract:  # pylint: disable=too-many-instance-attributes
         session = authenticator.get_authenticated_session()
         session.headers.update({'User-Agent': ('Mozilla/5.0 (Macintosh; Intel Mac OS X 10.14; rv:67.0)'
                                                'Gecko/20100101 Firefox/67.0')})
-        authenticator.quit()
         self.original_get = session.get
         session.get = self._patched_get
         return session
 
+    @backoff.on_exception(backoff.expo,
+                          requests.exceptions.RequestException)
     def _patched_get(self, *args, **kwargs):
         url = args[0]
         self._logger.debug('Using patched get request for url %s', url)
-        response = self.original_get(*args, **kwargs)
-        if not url.startswith(self.base_url):
-            self._logger.debug('Url "%s" requested is not from abn amro account api, passing through', url)
-            return response
-        if response.status_code == 401:
-            self._logger.info('Expired session detected, trying to re authenticate!')
+        try:
+            response = self.original_get(*args, **kwargs)
+            if not url.startswith(self.base_url):
+                self._logger.debug('Url "%s" requested is not from abn amro account api, passing through', url)
+                return response
+            if response.status_code == 401:
+                self._logger.info('Expired session detected, trying to re authenticate!')
+                self.session = self._get_authenticated_session()
+                response = self.original_get(*args, **kwargs)
+                self._logger.info('Successfully re authenticated!')
+        except requests.exceptions.ConnectionError:
+            self._logger.info('Connection reset detected, trying to re authenticate!')
             self.session = self._get_authenticated_session()
             response = self.original_get(*args, **kwargs)
         return response
@@ -568,7 +594,9 @@ class Contract:  # pylint: disable=too-many-instance-attributes
             url = f'{self.base_url}/contracts'
             headers = {'x-aab-serviceversion': 'v2'}
             response = self.session.get(url, headers=headers)
-            response.raise_for_status()
+            if not response.ok:
+                self._logger.warning('Error retrieving accounts for contract')
+                return []
             self._accounts = [Account(self, data) for data in response.json().get('contractList', [])]
             self._accounts.extend(self._get_foreign_accounts())
         return self._accounts
@@ -579,7 +607,22 @@ class Contract:  # pylint: disable=too-many-instance-attributes
         if response.status_code == 403:
             self._logger.info('No foreign accounts enabled on this account')
             return []
+        if not response.ok:
+            self._logger.warning('Could not get info on foreign accounts')
+            return []
         return [ForeignAccount(self, data) for data in response.json().get('accounts')]
+
+    def get_account(self, id_):
+        """Retrieves the account by the provided id.
+
+        Args:
+            id_ (str): The iban to retrieve the account for
+
+        Returns:
+            account (Account): The account if it exists, None otherwise.
+
+        """
+        return self.get_account_by_iban(id_)
 
     def get_account_by_iban(self, iban):
         """Retrieves an account object by the provided IBAN.
@@ -591,7 +634,8 @@ class Contract:  # pylint: disable=too-many-instance-attributes
             account (Account): Account object on match, None otherwise
 
         """
-        return next((account for account in self.accounts if account.account_number.lower() == iban.lower()), None)
+        return next((account for account in self.accounts
+                     if account.account_number.lower() == iban.lower()), None)
 
     def get_mortgage_account(self, account_number):
         """Retrieves a mortgage account by account number.
