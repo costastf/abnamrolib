@@ -298,7 +298,7 @@ class Account(Comparable):
     def _get_comparable_data(self):
         """
 
-        Returns: comparable_data (dict): A dictionary of account data that should remain static
+        Returns: comparable_data (OrderedDict): An ordered dictionary of account data that should remain static
 
         """
         return {key: value for key, value in self._data.get('contract').items() if key != 'balance'}
@@ -344,7 +344,7 @@ class ForeignAccount(Comparable):
     def _get_comparable_data(self):
         """
 
-        Returns: comparable_data (dict): A dictionary of account data that should remain static
+        Returns: comparable_data (OrderedDict): An ordered dictionary of account data that should remain static
 
         """
         return {key: value for key, value in self._data.get('account').items() if key != '_links'}
@@ -499,7 +499,7 @@ class AccountTransaction(Transaction):
     def _get_comparable_data(self):
         """
 
-        Returns: comparable_data (dict): A dictionary of transaction data that should remain static
+        Returns: comparable_data (OrderedDict): An ordered dictionary of transaction data that should remain static
 
         """
         return {key: value for key, value in self._data.items() if key != 'statusTimestamp'}
