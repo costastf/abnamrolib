@@ -328,7 +328,7 @@ class ForeignAccount(Comparable):
         return self._data.get('account')
 
     @property
-    def id(self):
+    def id(self):  # pylint: disable=invalid-name
         """Account number."""
         return self._account.get('id')
 

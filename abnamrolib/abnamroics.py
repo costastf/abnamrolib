@@ -381,6 +381,14 @@ class CreditCardTransaction(Transaction):
     """Models a credit card transaction."""
 
     @property
+    def _comparable_attributes(self):
+        return ['country_code',
+                'card_last_four_digits',
+                'transaction_date',
+                'description',
+                'billing_amount']
+
+    @property
     def country_code(self):
         """Country code."""
         return self._data.get('countryCode')
