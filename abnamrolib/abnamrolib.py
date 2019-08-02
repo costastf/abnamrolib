@@ -10,7 +10,6 @@
 #  rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
 #  sell copies of the Software, and to permit persons to whom the Software is
 #  furnished to do so, subject to the following conditions:
-#
 # The above copyright notice and this permission notice shall be included in
 #  all copies or substantial portions of the Software.
 #
@@ -166,13 +165,17 @@ class Product:
 
 
 class Account(Comparable):
-    """Models a contract."""
+    """Models an account."""
 
     def __init__(self, contract, data):
         super().__init__(data)
-        self._logger = logging.getLogger(f'{LOGGER_BASENAME}.{self.__class__.__name__}')
         self.contract = contract
-        self._data = data
+
+    @property
+    def _comparable_attributes(self):
+        return ['account_number',
+                'id',
+                'number']
 
     @property
     def _contract(self):
@@ -316,8 +319,19 @@ class ForeignAccount(Comparable):
         self._transactions_url = self._account.get('_links').get('transactions').get('href')
 
     @property
+    def _comparable_attributes(self):
+        return ['account_number',
+                'provider_id',
+                'provider_name']
+
+    @property
     def _account(self):
         return self._data.get('account')
+
+    @property
+    def id(self):  # pylint: disable=invalid-name
+        """Account number."""
+        return self._account.get('id')
 
     @property
     def account_number(self):
@@ -326,8 +340,18 @@ class ForeignAccount(Comparable):
 
     @property
     def iban(self):
-        """iban."""
+        """IBAN."""
         return self._account.get('accountNumber')
+
+    @property
+    def provider_id(self):
+        """Provider id."""
+        return self._account.get('provider').get('providerId')
+
+    @property
+    def provider_name(self):
+        """Provider id."""
+        return self._account.get('provider').get('providerName')
 
     @property
     def transactions(self):
@@ -355,6 +379,12 @@ class MortgageAccount(Comparable):
         self._data = self._get_data()
         super().__init__(self._data)
 
+    @property
+    def _comparable_attributes(self):
+        return ['_back_office_loan_number',
+                'payer_account',
+                'contract_number']
+
     def _get_data(self):
         url = f'{self.contract.base_url}/nl/havikonline/service/api/v1/Hypotheek/{self.account.number}'
         response = self.contract.session.get(url)
@@ -362,6 +392,21 @@ class MortgageAccount(Comparable):
             self._logger.warning('Error retrieving data for mortgage account "%s"', self.account.number)
             return {}
         return response.json()
+
+    @property
+    def _back_office_loan_number(self):
+        """Back office loan number."""
+        return self._data.get('backOfficeLeningnummer')
+
+    @property
+    def payer_account(self):
+        """Payer account."""
+        return self._data.get('bankrekeningIncassoHoofdschuldenaar')
+
+    @property
+    def contract_number(self):
+        """Contract number."""
+        return self._data.get('contractnummer')
 
     @property
     def full_amount(self):
@@ -391,6 +436,13 @@ class MortgageAccount(Comparable):
 
 class AccountTransaction(Transaction):
     """Models a banking transaction."""
+
+    @property
+    def _comparable_attributes(self):
+        return ['description',
+                'transaction_date',
+                'account_number',
+                'amount']
 
     @property
     def mutation_code(self):

@@ -66,6 +66,11 @@ class CreditCard(Comparable):  # pylint: disable=too-many-public-methods
         self._periods = None
 
     @property
+    def _comparable_attributes(self):
+        return ['number',
+                'product_id']
+
+    @property
     def number(self):
         """Number."""
         return self._data.get('accountNumber')
@@ -374,6 +379,14 @@ class Period:
 
 class CreditCardTransaction(Transaction):
     """Models a credit card transaction."""
+
+    @property
+    def _comparable_attributes(self):
+        return ['country_code',
+                'card_last_four_digits',
+                'transaction_date',
+                'description',
+                'billing_amount']
 
     @property
     def country_code(self):
