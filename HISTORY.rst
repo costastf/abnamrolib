@@ -127,3 +127,9 @@ History
 -------------------
 
 * Extended logging
+
+
+3.1.0 (02-08-2019)
+------------------
+
+* Uniquely identify a transaction and an account
