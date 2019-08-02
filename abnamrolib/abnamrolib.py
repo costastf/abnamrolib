@@ -381,10 +381,9 @@ class MortgageAccount(Comparable):
 
     @property
     def _comparable_attributes(self):
-        return ['full_amount',
-                'remaining_amount',
-                'remaining_months',
-                'monthly_amount']
+        return ['_back_office_loan_number',
+                'payer_account',
+                'contract_number']
 
     def _get_data(self):
         url = f'{self.contract.base_url}/nl/havikonline/service/api/v1/Hypotheek/{self.account.number}'
@@ -393,6 +392,21 @@ class MortgageAccount(Comparable):
             self._logger.warning('Error retrieving data for mortgage account "%s"', self.account.number)
             return {}
         return response.json()
+
+    @property
+    def _back_office_loan_number(self):
+        """Back office loan number."""
+        return self._data.get('backOfficeLeningnummer')
+
+    @property
+    def payer_account(self):
+        """Payer account."""
+        return self._data.get('bankrekeningIncassoHoofdschuldenaar')
+
+    @property
+    def contract_number(self):
+        """Contract number."""
+        return self._data.get('contractnummer')
 
     @property
     def full_amount(self):
