@@ -321,7 +321,8 @@ class ForeignAccount(Comparable):
     @property
     def _comparable_attributes(self):
         return ['account_number',
-                'id']
+                'provider_id',
+                'provider_name']
 
     @property
     def _account(self):
@@ -339,8 +340,18 @@ class ForeignAccount(Comparable):
 
     @property
     def iban(self):
-        """iban."""
+        """IBAN."""
         return self._account.get('accountNumber')
+
+    @property
+    def provider_id(self):
+        """Provider id."""
+        return self._account.get('provider').get('providerId')
+
+    @property
+    def provider_name(self):
+        """Provider id."""
+        return self._account.get('provider').get('providerName')
 
     @property
     def transactions(self):
