@@ -36,8 +36,8 @@ import logging
 import backoff
 import requests
 from requests import Session
-from bankinterfaceslib import Contract, Comparable, Transaction
 from urllib3.util import parse_url
+from ynabinterfaceslib import Contract, Comparable, Transaction
 
 from abnamrolib.abnamrolibexceptions import AuthenticationFailed
 

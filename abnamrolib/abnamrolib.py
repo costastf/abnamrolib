@@ -36,9 +36,9 @@ from time import sleep
 
 import backoff
 import requests
-from bankinterfaceslib import AccountAuthenticator, Comparable, Transaction, Contract
 from selenium.common.exceptions import TimeoutException
 from urllib3.util import parse_url
+from ynabinterfaceslib import AccountAuthenticator, Comparable, Transaction, Contract
 
 from abnamrolib.abnamrolibexceptions import AuthenticationFailed
 
@@ -87,6 +87,10 @@ class AbnAmroAccountAuthenticator(AccountAuthenticator):
                 self._click_on("//*[text()='Save cookie-level']")
             except TimeoutException:
                 self._logger.warning("Cookies window didn't pop up")
+            try:
+                self._click_on("//*[@id='aab-cookie-consent-agree']")
+            except TimeoutException:
+                self._logger.warning('"I accept" window didn\'t pop up')
             self._logger.debug('Logging in')
             element = self._driver.find_element_by_xpath("//*[(@label='Identification code')]")
             element.click()
