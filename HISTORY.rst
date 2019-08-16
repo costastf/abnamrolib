@@ -133,3 +133,9 @@ History
 ------------------
 
 * Uniquely identify a transaction and an account
+
+
+3.1.1 (16-08-2019)
+------------------
+
+* renamed underlying dependency and updated the code accordingly and fixed bug with a pop up covering the submission of the login.
