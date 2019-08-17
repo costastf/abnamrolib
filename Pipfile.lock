@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "daae693c918ebc014afa27f53fb2912f36743c09cbd155728e54bdbca03a8186"
+            "sha256": "2c20b636f88e283696e349d512dd1801d5d55a6fe22931e6c817db0b770d52ec"
         },
         "pipfile-spec": 6,
         "requires": {},
@@ -95,10 +95,10 @@
         },
         "ynabinterfaceslib": {
             "hashes": [
-                "sha256:3c5f81e3a3b880680c665d8fcd6dff6826b38d572974528d736b98cd20c463f0"
+                "sha256:4fbffc41219e4bf97788bc7a97d86860d3064c309d7bfdd041d9928f8e071b6b"
             ],
             "index": "pypi",
-            "version": "==0.1.0"
+            "version": "==0.2.0"
         }
     },
     "develop": {
@@ -543,6 +543,7 @@
                 "sha256:ae3258c5249493cebe73cb4e18253a41ed69262484bad36fdb3efcb8ad8870bb",
                 "sha256:b52bf5833ed01c7b5c5fb73a7f71b3d98d48e9b9b8764236237bdc7ecae850fc"
             ],
+            "markers": "sys_platform != 'win32'",
             "version": "==1.12.14"
         },
         "six": {

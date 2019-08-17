@@ -84,11 +84,11 @@ class AbnAmroAccountAuthenticator(AccountAuthenticator):
             self._driver.get(url)
             self._logger.debug('Accepting cookies')
             try:
-                self._click_on("//*[text()='Save cookie-level']")
+                self._click_on("//*[text()='Save cookie-level']", wait=5)
             except TimeoutException:
                 self._logger.warning("Cookies window didn't pop up")
             try:
-                self._click_on("//*[@id='aab-cookie-consent-agree']")
+                self._click_on("//*[@id='aab-cookie-consent-agree']", wait=5)
             except TimeoutException:
                 self._logger.warning('"I accept" window didn\'t pop up')
             self._logger.debug('Logging in')
