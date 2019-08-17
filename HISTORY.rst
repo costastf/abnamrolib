@@ -139,3 +139,9 @@ History
 ------------------
 
 * renamed underlying dependency and updated the code accordingly and fixed bug with a pop up covering the submission of the login.
+
+
+3.2.0 (17-08-2019)
+------------------
+
+* Shortened timout on click event on log in.
