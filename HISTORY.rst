@@ -145,3 +145,9 @@ History
 ------------------
 
 * Shortened timout on click event on log in.
+
+
+3.2.1 (29-08-2019)
+------------------
+
+* Added latest popup window
