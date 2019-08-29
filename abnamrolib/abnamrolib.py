@@ -88,6 +88,10 @@ class AbnAmroAccountAuthenticator(AccountAuthenticator):
             except TimeoutException:
                 self._logger.warning("Cookies window didn't pop up")
             try:
+                self._click_on("/html/body/div[1]/div/div/div[2]/button", wait=5)
+            except TimeoutException:
+                self._logger.warning('"Continue" window didn\'t pop up')
+            try:
                 self._click_on("//*[@id='aab-cookie-consent-agree']", wait=5)
             except TimeoutException:
                 self._logger.warning('"I accept" window didn\'t pop up')
