@@ -44,3 +44,7 @@ __status__ = '''Development'''  # "Prototype", "Development", "Production".
 
 class AuthenticationFailed(Exception):
     """The token provided is invalid or the authentication failed for some other reason."""
+
+
+class InvalidCookies(Exception):
+    """The cookies provided are invalid."""
