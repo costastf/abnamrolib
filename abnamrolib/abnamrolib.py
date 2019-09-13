@@ -31,16 +31,14 @@ Main code for abnamrolib.
 """
 
 import logging
+from dataclasses import dataclass
 from datetime import date
-from time import sleep
 
-import backoff
-import requests
-from selenium.common.exceptions import TimeoutException
+from requests import Session
 from urllib3.util import parse_url
-from ynabinterfaceslib import AccountAuthenticator, Comparable, Transaction, Contract
+from ynabinterfaceslib import Comparable, Transaction, Contract
 
-from abnamrolib.abnamrolibexceptions import AuthenticationFailed
+from .abnamrolibexceptions import InvalidCookies
 
 __author__ = '''Costas Tyfoxylos <costas.tyf@gmail.com>'''
 __docformat__ = '''google'''
@@ -59,49 +57,136 @@ LOGGER = logging.getLogger(LOGGER_BASENAME)
 LOGGER.addHandler(logging.NullHandler())
 
 
-class AbnAmroAccountAuthenticator(AccountAuthenticator):
-    """Extends the authenticator for an account."""
+@dataclass
+class Cookie:
+    """Models a cookie."""
 
-    def authenticate(self,  # pylint: disable=arguments-differ
-                     account_number,
-                     card_number,
-                     pin_number,
-                     url='https://www.abnamro.nl/portalserver/my-abnamro/my-overview/overview/index.html'):
-        """Implements the business logic of authenticating to an account.
+    domain: str
+    flag: bool
+    path: str
+    secure: bool
+    expiry: int
+    name: str
+    value: str
 
-        Args:
-            account_number (str): The number of an account to authenticate to
-            card_number (str):  The card number of an account to authenticate to
-            pin_number (str):  The pin number of an account to authenticate to
-            url (str):  The url to authenticate to
+    def to_dict(self):
+        """Returns the cookie as a dictionary.
 
         Returns:
-            bool: True in success
+            cookie (dict): The dictionary with the required values of the cookie
 
         """
+        return {key: getattr(self, key) for key in ('domain', 'name', 'value', 'path')}
+
+
+class AccountContract(Contract):
+    """Models the service."""
+
+    def __init__(self, cookie_file):
+        self._logger = logging.getLogger(f'{LOGGER_BASENAME}.{self.__class__.__name__}')
+        self._base_url = 'https://www.abnamro.nl'
+        self._accounts = None
+        self.session = self._get_authenticated_session(cookie_file)
+
+    @property
+    def host(self):
+        """Host."""
+        return parse_url(self.base_url).host
+
+    @property
+    def base_url(self):
+        """Base url."""
+        return self._base_url
+
+    def _get_authenticated_session(self, cookie_file):
+        session = Session()
         try:
-            self._logger.debug('Loading login page')
-            self._driver.get(url)
-            self._logger.debug('Accepting cookies')
-            try:
-                self._click_on("//*[text()='Save cookie-level']")
-            except TimeoutException:
-                self._logger.warning("Cookies window didn't pop up")
-            try:
-                self._click_on("//*[@id='aab-cookie-consent-agree']")
-            except TimeoutException:
-                self._logger.warning('"I accept" window didn\'t pop up')
-            self._logger.debug('Logging in')
-            element = self._driver.find_element_by_xpath("//*[(@label='Identification code')]")
-            element.click()
-            self._driver.find_element_by_name('accountNumber').send_keys(account_number)
-            self._driver.find_element_by_name('cardNumber').send_keys(card_number)
-            self._driver.find_element_by_name('inputElement').send_keys(pin_number)
-            self._driver.find_element_by_id('login-submit').click()
+            cfile = open(cookie_file, 'rb')
+        except FileNotFoundError:
+            message = 'Could not open cookies file, either file does not exist or no read access.'
+            raise InvalidCookies(message)
+        session = self._load_text_cookies(session, cfile)
+        session.headers.update({'User-Agent': ('Mozilla/5.0 (Macintosh; Intel Mac OS X 10.14; rv:67.0)'
+                                               'Gecko/20100101 Firefox/67.0')})
+        return session
+
+    def _load_text_cookies(self, session, cookies_file):
+        try:
+            text = cookies_file.read().decode('utf-8')
+            cookies = [Cookie(*line.strip().split()) for line in text.splitlines()
+                       if not line.strip().startswith('#') and line]
+            for cookie in cookies:
+                session.cookies.set(**cookie.to_dict())
         except Exception:
-            self._logger.exception('Error authenticating')
-            raise AuthenticationFailed
-        return True
+            self._logger.exception('Things broke...')
+            message = 'Could not properly load cookie text file.'
+            raise InvalidCookies(message)
+        return session
+
+    @property
+    def accounts(self):
+        """Accounts."""
+        if self._accounts is None:
+            url = f'{self.base_url}/contracts'
+            headers = {'x-aab-serviceversion': 'v2'}
+            response = self.session.get(url, headers=headers)
+            if not response.ok:
+                self._logger.warning('Error retrieving accounts for contract')
+                return []
+            self._accounts = [Account(self, data) for data in response.json().get('contractList', [])]
+            self._accounts.extend(self._get_foreign_accounts())
+        return self._accounts
+
+    def _get_foreign_accounts(self):
+        url = f'{self.base_url}/mul/accounts/v1'
+        response = self.session.get(url)
+        if response.status_code == 403:
+            self._logger.info('No foreign accounts enabled on this account')
+            return []
+        if not response.ok:
+            self._logger.warning('Could not get info on foreign accounts')
+            return []
+        return [ForeignAccount(self, data) for data in response.json().get('accounts')]
+
+    def get_account(self, id_):
+        """Retrieves the account by the provided id.
+
+        Args:
+            id_ (str): The iban to retrieve the account for
+
+        Returns:
+            account (Account): The account if it exists, None otherwise.
+
+        """
+        return self.get_account_by_iban(id_)
+
+    def get_account_by_iban(self, iban):
+        """Retrieves an account object by the provided IBAN.
+
+        Args:
+            iban (str): The iban to match the account with
+
+        Returns:
+            account (Account): Account object on match, None otherwise
+
+        """
+        return next((account for account in self.accounts
+                     if account.account_number.lower() == iban.lower()), None)
+
+    def get_mortgage_account(self, account_number):
+        """Retrieves a mortgage account by account number.
+
+        Args:
+            account_number (str): The account number of the mortgage account to match
+
+        Returns:
+            account (MortgageAccount): A MortgageAccount object on success, None otherwise
+
+        """
+        return next((MortgageAccount(self, account)
+                     for account in self.accounts
+                     if all([account.product.group == 'MORTGAGE',
+                             account.number == account_number])), None)
 
 
 class Customer:
@@ -557,123 +642,3 @@ class ForeignAccountTransaction(AccountTransaction):
     def counter_account_name(self):
         """Counter account name."""
         return self._data.get('holder', {}).get('name', '')
-
-
-class AccountContract(Contract):  # pylint: disable=too-many-instance-attributes
-    """Models the service."""
-
-    def __init__(self, account_number, card_number, pin_number):
-        self._logger = logging.getLogger(f'{LOGGER_BASENAME}.{self.__class__.__name__}')
-        self.account_number = account_number
-        self.card_number = card_number
-        self.pin_number = pin_number
-        self._base_url = 'https://www.abnamro.nl'
-        self._accounts = None
-        self.session = self._get_authenticated_session()
-
-    @property
-    def host(self):
-        """Host."""
-        return parse_url(self.base_url).host
-
-    @property
-    def base_url(self):
-        """Base url."""
-        return self._base_url
-
-    def _get_authenticated_session(self):
-        authenticator = AbnAmroAccountAuthenticator()
-        authenticator.authenticate(self.account_number, self.card_number, self.pin_number)
-        sleep(2)  # give time to the headless browser to execute all the code to get all the cookies
-        session = authenticator.get_authenticated_session()
-        session.headers.update({'User-Agent': ('Mozilla/5.0 (Macintosh; Intel Mac OS X 10.14; rv:67.0)'
-                                               'Gecko/20100101 Firefox/67.0')})
-        self.original_get = session.get
-        session.get = self._patched_get
-        return session
-
-    @backoff.on_exception(backoff.expo,
-                          requests.exceptions.RequestException)
-    def _patched_get(self, *args, **kwargs):
-        url = args[0]
-        self._logger.debug('Using patched get request for url %s', url)
-        try:
-            response = self.original_get(*args, **kwargs)
-            if not url.startswith(self.base_url):
-                self._logger.debug('Url "%s" requested is not from abn amro account api, passing through', url)
-                return response
-            if response.status_code == 401:
-                self._logger.info('Expired session detected, trying to re authenticate!')
-                self.session = self._get_authenticated_session()
-                response = self.original_get(*args, **kwargs)
-                self._logger.info('Successfully re authenticated!')
-        except requests.exceptions.ConnectionError:
-            self._logger.info('Connection reset detected, trying to re authenticate!')
-            self.session = self._get_authenticated_session()
-            response = self.original_get(*args, **kwargs)
-        return response
-
-    @property
-    def accounts(self):
-        """Accounts."""
-        if self._accounts is None:
-            url = f'{self.base_url}/contracts'
-            headers = {'x-aab-serviceversion': 'v2'}
-            response = self.session.get(url, headers=headers)
-            if not response.ok:
-                self._logger.warning('Error retrieving accounts for contract')
-                return []
-            self._accounts = [Account(self, data) for data in response.json().get('contractList', [])]
-            self._accounts.extend(self._get_foreign_accounts())
-        return self._accounts
-
-    def _get_foreign_accounts(self):
-        url = f'{self.base_url}/mul/accounts/v1'
-        response = self.session.get(url)
-        if response.status_code == 403:
-            self._logger.info('No foreign accounts enabled on this account')
-            return []
-        if not response.ok:
-            self._logger.warning('Could not get info on foreign accounts')
-            return []
-        return [ForeignAccount(self, data) for data in response.json().get('accounts')]
-
-    def get_account(self, id_):
-        """Retrieves the account by the provided id.
-
-        Args:
-            id_ (str): The iban to retrieve the account for
-
-        Returns:
-            account (Account): The account if it exists, None otherwise.
-
-        """
-        return self.get_account_by_iban(id_)
-
-    def get_account_by_iban(self, iban):
-        """Retrieves an account object by the provided IBAN.
-
-        Args:
-            iban (str): The iban to match the account with
-
-        Returns:
-            account (Account): Account object on match, None otherwise
-
-        """
-        return next((account for account in self.accounts
-                     if account.account_number.lower() == iban.lower()), None)
-
-    def get_mortgage_account(self, account_number):
-        """Retrieves a mortgage account by account number.
-
-        Args:
-            account_number (str): The account number of the mortgage account to match
-
-        Returns:
-            account (MortgageAccount): A MortgageAccount object on success, None otherwise
-
-        """
-        return next((MortgageAccount(self, account)
-                     for account in self.accounts
-                     if all([account.product.group == 'MORTGAGE',
-                             account.number == account_number])), None)
