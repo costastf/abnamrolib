@@ -35,5 +35,4 @@ emoji = "~=0.5.1"
 
 ynabinterfaceslib = "~=0.1.0"
 requests = "~=2.22.0"
-selenium = "~=3.141.0"
 backoff = "~=1.8.0"
