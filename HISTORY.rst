@@ -151,3 +151,9 @@ History
 ------------------
 
 * Added latest popup window
+
+
+4.0.0 (13-09-2019)
+------------------
+
+* Implemented cookie based authentication
