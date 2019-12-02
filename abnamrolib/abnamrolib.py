@@ -445,8 +445,28 @@ class ForeignAccount(Comparable):
     @property
     def transactions(self):
         """Transactions."""
-        for transaction in self.get_latest_transactions():
+        transactions, next_page_key = self._get_transactions()
+        for transaction in transactions:
             yield transaction
+        while next_page_key:
+            url = f'{self.contract.base_url}{next_page_key}'
+            transactions, next_page_key = self._get_transactions(url)
+            for transaction in transactions:
+                yield transaction
+
+    def _get_transactions(self, url=None):
+        """Get transactions from foreign account."""
+        if not url:
+            response = self.contract.session.get(self._transactions_url)
+        else:
+            response = self.contract.session.get(url)
+        if not response.ok:
+            self._logger.warning('Error retrieving transactions for account "%s"', self.account_number)
+            return []
+        transactions = [ForeignAccountTransaction(data.get('transaction', {})) for data in
+                        response.json().get('transactionList', {}).get('transactions', [{}])]
+        next_page_key = response.json().get('transactionList', {}).get('pagination', {}).get('next', {}).get('href', {})
+        return transactions, next_page_key
 
     def get_latest_transactions(self):
         """Get transactions from foreign account."""
