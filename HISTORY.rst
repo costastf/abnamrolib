@@ -157,3 +157,9 @@ History
 ------------------
 
 * Implemented cookie based authentication
+
+
+5.0.0 (09-12-2019)
+------------------
+
+* Implemented cookie authentication for credit card and moved relevant shared code into a common module.
