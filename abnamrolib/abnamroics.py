@@ -33,13 +33,10 @@ Main code for abnamrolib.
 
 import logging
 
-import backoff
-import requests
-from requests import Session
 from urllib3.util import parse_url
 from ynabinterfaceslib import Contract, Comparable, Transaction
 
-from abnamrolib.abnamrolibexceptions import AuthenticationFailed
+from .common import CookieAuthenticator
 
 __author__ = '''Costas Tyfoxylos <costas.tyf@gmail.com>'''
 __docformat__ = '''google'''
@@ -489,16 +486,14 @@ class CreditCardTransaction(Transaction):
         return self._data.get('chargeBackAllowed')
 
 
-class CreditCardContract(Contract):
+class CreditCardContract(Contract, CookieAuthenticator):
     """Models a credit card account."""
 
-    def __init__(self, username, password):
-        self._logger = logging.getLogger(f'{LOGGER_BASENAME}.{self.__class__.__name__}')
-        self._username = username
-        self._password = password
+    def __init__(self, cookie_file):
+        CookieAuthenticator.__init__(self, cookie_file)
         self._base_url = 'https://www.icscards.nl'
-        self.session = self._get_authenticated_session()
         self._accounts = None
+        self.session.headers.update({'X-XSRF-TOKEN': self.session.cookies.get('XSRF-TOKEN')})
 
     @property
     def host(self):
@@ -509,51 +504,6 @@ class CreditCardContract(Contract):
     def base_url(self):
         """Base url."""
         return self._base_url
-
-    def _get_authenticated_session(self):
-        session = Session()
-        headers = {'User-Agent': ('Mozilla/5.0 (Macintosh; Intel Mac OS X 10.14; rv:67.0)'
-                                  'Gecko/20100101 Firefox/67.0')}
-        session.headers.update(headers)
-        session.headers.update({'X-XSRF-TOKEN': self._get_xsrf_token(session,
-                                                                     self._username,
-                                                                     self._password)})
-        self._logger.info('Successfully authenticated!')
-        self.original_get = session.get
-        session.get = self._patched_get
-        return session
-
-    @backoff.on_exception(backoff.expo,
-                          requests.exceptions.RequestException)
-    def _patched_get(self, *args, **kwargs):
-        url = args[0]
-        self._logger.debug('Using patched get request for url %s', url)
-        try:
-            response = self.original_get(*args, **kwargs)
-            if not url.startswith(self._base_url):
-                self._logger.debug('Url "%s" requested is not from credit card api, passing through', url)
-                return response
-            if 'USERNAME=unauthenticated' in response.url:
-                self._logger.info('Expired session detected, trying to re authenticate!')
-                self.session = self._get_authenticated_session()
-                response = self.original_get(*args, **kwargs)
-        except requests.exceptions.ConnectionError:
-            self._logger.info('Connection reset detected, trying to re authenticate!')
-            self.session = self._get_authenticated_session()
-            response = self.original_get(*args, **kwargs)
-        return response
-
-    def _get_xsrf_token(self, session, username, password):
-        login_url = f'{self.base_url}/pub/nl/pub/login'
-        self._logger.debug('Trying to authenticate to url "%s"', login_url)
-        payload = {'loginType': 'PASSWORD',
-                   'virtualPortal': 'ICS-ABNAMRO',
-                   'username': username,
-                   'password': password}
-        response = session.post(login_url, json=payload)
-        if not response.ok:
-            raise AuthenticationFailed(response.text)
-        return session.cookies.get('XSRF-TOKEN')
 
     @property
     def accounts(self):
