@@ -31,14 +31,12 @@ Main code for abnamrolib.
 """
 
 import logging
-from dataclasses import dataclass
 from datetime import date
 
-from requests import Session
 from urllib3.util import parse_url
 from ynabinterfaceslib import Comparable, Transaction, Contract
 
-from .abnamrolibexceptions import InvalidCookies
+from .common import CookieAuthenticator
 
 __author__ = '''Costas Tyfoxylos <costas.tyf@gmail.com>'''
 __docformat__ = '''google'''
@@ -57,36 +55,13 @@ LOGGER = logging.getLogger(LOGGER_BASENAME)
 LOGGER.addHandler(logging.NullHandler())
 
 
-@dataclass
-class Cookie:
-    """Models a cookie."""
-
-    domain: str
-    flag: bool
-    path: str
-    secure: bool
-    expiry: int
-    name: str
-    value: str
-
-    def to_dict(self):
-        """Returns the cookie as a dictionary.
-
-        Returns:
-            cookie (dict): The dictionary with the required values of the cookie
-
-        """
-        return {key: getattr(self, key) for key in ('domain', 'name', 'value', 'path')}
-
-
-class AccountContract(Contract):
+class AccountContract(Contract, CookieAuthenticator):
     """Models the service."""
 
     def __init__(self, cookie_file):
-        self._logger = logging.getLogger(f'{LOGGER_BASENAME}.{self.__class__.__name__}')
+        CookieAuthenticator.__init__(self, cookie_file)
         self._base_url = 'https://www.abnamro.nl'
         self._accounts = None
-        self.session = self._get_authenticated_session(cookie_file)
 
     @property
     def host(self):
@@ -97,31 +72,6 @@ class AccountContract(Contract):
     def base_url(self):
         """Base url."""
         return self._base_url
-
-    def _get_authenticated_session(self, cookie_file):
-        session = Session()
-        try:
-            cfile = open(cookie_file, 'rb')
-        except FileNotFoundError:
-            message = 'Could not open cookies file, either file does not exist or no read access.'
-            raise InvalidCookies(message)
-        session = self._load_text_cookies(session, cfile)
-        session.headers.update({'User-Agent': ('Mozilla/5.0 (Macintosh; Intel Mac OS X 10.14; rv:67.0)'
-                                               'Gecko/20100101 Firefox/67.0')})
-        return session
-
-    def _load_text_cookies(self, session, cookies_file):
-        try:
-            text = cookies_file.read().decode('utf-8')
-            cookies = [Cookie(*line.strip().split()) for line in text.splitlines()
-                       if not line.strip().startswith('#') and line]
-            for cookie in cookies:
-                session.cookies.set(**cookie.to_dict())
-        except Exception:
-            self._logger.exception('Things broke...')
-            message = 'Could not properly load cookie text file.'
-            raise InvalidCookies(message)
-        return session
 
     @property
     def accounts(self):
