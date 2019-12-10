@@ -33,9 +33,11 @@ Main code for abnamrolib.
 import logging
 from datetime import date
 
+from dateutil.parser import parse
 from urllib3.util import parse_url
 from ynabinterfaceslib import Comparable, Transaction, Contract
 
+from .abnamrolibexceptions import InvalidDateFormat
 from .common import CookieAuthenticator
 
 __author__ = '''Costas Tyfoxylos <costas.tyf@gmail.com>'''
@@ -327,6 +329,76 @@ class Account(Comparable):
             transactions, last_mutation_key = self._get_transactions(params=params)
             for transaction in transactions:
                 yield transaction
+
+    @staticmethod
+    def _parse_date(date_):
+        try:
+            date_object = parse(date_)
+        except ValueError:
+            raise InvalidDateFormat(date_)
+        return date_object
+
+    def get_transactions_for_date(self, date_):
+        """Retrieves all transactions for a provided date.
+
+        Args:
+            date_ (str): The date to provide the transactions for
+
+        Returns:
+            transactions (generator): Transaction objects
+
+        """
+        date_object = self._parse_date(date_).date()
+        last_mutation_key = f'{date_object.year}-{date_object.month:02d}-{date_object.day+1:02d}-00.00.00.000000'
+        while last_mutation_key:
+            params = {'lastMutationKey': last_mutation_key}
+            transactions, last_mutation_key = self._get_transactions(params=params)
+            transactions = [transaction for transaction in transactions
+                            if transaction.transaction_date == date_object]
+            if not transactions:
+                last_mutation_key = None
+            for transaction in transactions:
+                yield transaction
+
+    def get_transactions_for_date_range(self, date_from, date_to):
+        """Retrieves all transactions between two provided dates.
+
+        Args:
+            date_from (str): The date to provide the transactions from
+            date_to (str): The date to provide the transactions until
+
+        Returns:
+            transactions (generator): Transaction objects
+
+        """
+        start_date = self._parse_date(date_to).date()
+        end_date = self._parse_date(date_from).date()
+        last_mutation_key = f'{start_date.year}-{start_date.month:02d}-{start_date.day + 1:02d}-00.00.00.000000'
+        while last_mutation_key:
+            params = {'lastMutationKey': last_mutation_key}
+            transactions, last_mutation_key = self._get_transactions(params=params)
+            transactions = [transaction for transaction in transactions
+                            if end_date <= transaction.transaction_date <= start_date]
+            if not transactions:
+                last_mutation_key = None
+            for transaction in transactions:
+                yield transaction
+
+    def transactions_since_date(self, date_):
+        """Retrieves all transactions since a provided date.
+
+        Args:
+            date_ (str): The date to provide the transactions until
+
+        Returns:
+            transactions (generator): Transaction objects
+
+        """
+        end_date = self._parse_date(date_).date()
+        for transaction in self.transactions:
+            if transaction.transaction_date < end_date:
+                break
+            yield transaction
 
     def get_latest_transactions(self):
         """Retrieves the latest transactions.
