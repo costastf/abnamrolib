@@ -48,3 +48,7 @@ class AuthenticationFailed(Exception):
 
 class InvalidCookies(Exception):
     """The cookies provided are invalid."""
+
+
+class InvalidDateFormat(Exception):
+    """The date provided cannot be automatically parsed."""

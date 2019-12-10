@@ -35,3 +35,4 @@ emoji = "~=0.5.1"
 
 ynabinterfaceslib = "~=1.0.0"
 requests = "~=2.22.0"
+python-dateutil = "~=2.8.1"
