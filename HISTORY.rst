@@ -169,3 +169,9 @@ History
 ------------------
 
 * Implemented retrieving transaction by date, by ranges of dates and since a date.
+
+
+5.2.0 (10-12-2019)
+------------------
+
+* Fixed name of method.
