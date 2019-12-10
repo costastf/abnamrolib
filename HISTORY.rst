@@ -163,3 +163,9 @@ History
 ------------------
 
 * Implemented cookie authentication for credit card and moved relevant shared code into a common module.
+
+
+5.1.0 (10-12-2019)
+------------------
+
+* Implemented retrieving transaction by date, by ranges of dates and since a date.
