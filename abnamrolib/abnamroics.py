@@ -33,9 +33,11 @@ Main code for abnamrolib.
 
 import logging
 
+from dateutil.parser import parse
 from urllib3.util import parse_url
 from ynabinterfaceslib import Contract, Comparable, Transaction
 
+from .abnamrolibexceptions import InvalidDateFormat, InvalidDateRange
 from .common import CookieAuthenticator
 
 __author__ = '''Costas Tyfoxylos <costas.tyf@gmail.com>'''
@@ -234,7 +236,7 @@ class CreditCard(Comparable):  # pylint: disable=too-many-public-methods
 
         """
         return next((period for period in self.periods
-                     if period.period == f'{year}-{month.zfill(2)}'), None)
+                     if period.period == f'{str(year)}-{str(month).zfill(2)}'), None)
 
     def get_transactions_for_period(self, year, month):
         """Retrieves the transactions for that period.
@@ -251,6 +253,54 @@ class CreditCard(Comparable):  # pylint: disable=too-many-public-methods
         if not period_:
             return []
         return period_.transactions
+
+    @staticmethod
+    def _parse_date(date_):
+        try:
+            date_object = parse(date_)
+        except ValueError:
+            raise InvalidDateFormat(date_)
+        return date_object
+
+    def _get_transactions_for_date_range(self, date_from, date_to=None):
+        start_date = self._parse_date(date_from).date()
+        end_date = self._parse_date(date_to).date() if date_to else self._parse_date(date_from).date()
+        if start_date > end_date:
+            raise InvalidDateRange('date_from needs to be earlier than date_to')
+        year_offset = end_date.year - start_date.year
+        periods = []
+        if not year_offset:
+            for month in range(start_date.month, end_date.month + 2):
+                period = self.get_period(start_date.year, month)
+                if period:
+                    periods.append(period)
+        else:
+            for year in range(year_offset + 1):
+                year_ = start_date.year + year
+                start_month = 1 if year else start_date.month
+                end_month = 13 if not year else (end_date.month + 2)
+                for month in range(start_month, end_month):
+                    period = self.get_period(year_, month)
+                    if period:
+                        periods.append(period)
+        transactions = []
+        for period in periods:
+            for transaction in period.transactions:
+                if start_date <= parse(transaction.transaction_date).date() <= end_date:
+                    transactions.append(transaction)
+        for transaction in sorted(transactions, key=lambda x: x.transaction_date):
+            yield transaction
+
+    def get_transactions_for_date(self, transaction_date):
+        for transaction in self._get_transactions_for_date_range(transaction_date):
+            yield transaction
+
+    def get_transactions_for_date_range(self, date_from, date_to):
+        for transaction in self._get_transactions_for_date_range(date_from, date_to):
+            yield transaction
+
+    def get_transactions_since_date(self):
+        pass
 
     @property
     def transactions(self):

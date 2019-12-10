@@ -338,27 +338,18 @@ class Account(Comparable):
             raise InvalidDateFormat(date_)
         return date_object
 
-    def get_transactions_for_date(self, date_):
+    def get_transactions_for_date(self, transaction_date):
         """Retrieves all transactions for a provided date.
 
         Args:
-            date_ (str): The date to provide the transactions for
+            transaction_date (str): The date to provide the transactions for
 
         Returns:
             transactions (generator): Transaction objects
 
         """
-        date_object = self._parse_date(date_).date()
-        last_mutation_key = f'{date_object.year}-{date_object.month:02d}-{date_object.day+1:02d}-00.00.00.000000'
-        while last_mutation_key:
-            params = {'lastMutationKey': last_mutation_key}
-            transactions, last_mutation_key = self._get_transactions(params=params)
-            transactions = [transaction for transaction in transactions
-                            if transaction.transaction_date == date_object]
-            if not transactions:
-                last_mutation_key = None
-            for transaction in transactions:
-                yield transaction
+        for transaction in self._get_transactions_for_date_range(date_from=transaction_date):
+            yield transaction
 
     def get_transactions_for_date_range(self, date_from, date_to):
         """Retrieves all transactions between two provided dates.
@@ -371,9 +362,13 @@ class Account(Comparable):
             transactions (generator): Transaction objects
 
         """
-        start_date = self._parse_date(date_to).date()
+        for transaction in self._get_transactions_for_date_range(date_from, date_to):
+            yield transaction
+
+    def _get_transactions_for_date_range(self, date_from, date_to=None):
+        start_date = self._parse_date(date_to).date() if date_to else self._parse_date(date_from).date()
         end_date = self._parse_date(date_from).date()
-        last_mutation_key = f'{start_date.year}-{start_date.month:02d}-{start_date.day + 1:02d}-00.00.00.000000'
+        last_mutation_key = f'{start_date.year}-{start_date.month:02d}-{start_date.day + 1:02d}-11.59.00.000000'
         while last_mutation_key:
             params = {'lastMutationKey': last_mutation_key}
             transactions, last_mutation_key = self._get_transactions(params=params)
@@ -384,17 +379,17 @@ class Account(Comparable):
             for transaction in transactions:
                 yield transaction
 
-    def get_transactions_since_date(self, date_):
+    def get_transactions_since_date(self, until_date):
         """Retrieves all transactions since a provided date.
 
         Args:
-            date_ (str): The date to provide the transactions until
+            until_date (str): The date to provide the transactions until
 
         Returns:
             transactions (generator): Transaction objects
 
         """
-        end_date = self._parse_date(date_).date()
+        end_date = self._parse_date(until_date).date()
         for transaction in self.transactions:
             if transaction.transaction_date < end_date:
                 break

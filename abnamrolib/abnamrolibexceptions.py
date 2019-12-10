@@ -52,3 +52,7 @@ class InvalidCookies(Exception):
 
 class InvalidDateFormat(Exception):
     """The date provided cannot be automatically parsed."""
+
+
+class InvalidDateRange(Exception):
+    """The date range provided is not valid."""
