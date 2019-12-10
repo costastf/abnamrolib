@@ -384,7 +384,7 @@ class Account(Comparable):
             for transaction in transactions:
                 yield transaction
 
-    def transactions_since_date(self, date_):
+    def get_transactions_since_date(self, date_):
         """Retrieves all transactions since a provided date.
 
         Args:
