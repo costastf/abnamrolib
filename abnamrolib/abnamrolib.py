@@ -484,10 +484,10 @@ class ForeignAccount(Comparable):
             response = self.contract.session.get(url)
         if not response.ok:
             self._logger.warning('Error retrieving transactions for account "%s"', self.account_number)
-            return []
+            return [], ''
         transactions = [ForeignAccountTransaction(data.get('transaction', {})) for data in
                         response.json().get('transactionList', {}).get('transactions', [{}])]
-        next_page_key = response.json().get('transactionList', {}).get('pagination', {}).get('next', {}).get('href', {})
+        next_page_key = response.json().get('transactionList', {}).get('pagination', {}).get('next', {}).get('href', '')
         return transactions, next_page_key
 
     def get_latest_transactions(self):
