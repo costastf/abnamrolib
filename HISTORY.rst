@@ -175,3 +175,9 @@ History
 ------------------
 
 * Fixed name of method.
+
+
+5.2.1 (26-10-2020)
+------------------
+
+* Fixed bug with new cookie header required by ICS.
