@@ -493,7 +493,8 @@ class CreditCardContract(Contract, CookieAuthenticator):
         CookieAuthenticator.__init__(self, cookie_file)
         self._base_url = 'https://www.icscards.nl'
         self._accounts = None
-        self.session.headers.update({'X-XSRF-TOKEN': self.session.cookies.get('XSRF-TOKEN')})
+        self.session.headers.update({'X-XSRF-TOKEN': self.session.cookies.get('XSRF-TOKEN'),
+                                     'x-dtpc': self.session.cookies.get('dtPC')})
 
     @property
     def host(self):
@@ -514,6 +515,7 @@ class CreditCardContract(Contract, CookieAuthenticator):
             response = self.session.get(url)
             if not response.ok:
                 self._logger.warning('Error retrieving accounts for contract')
+                self._logger.debug('Response was %s', response.text)
                 return []
             self._accounts = [CreditCard(self, self._get_account_data(data.get('accountNumber')))
                               for data in response.json()]

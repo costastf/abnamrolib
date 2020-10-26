@@ -84,6 +84,7 @@ class AccountContract(Contract, CookieAuthenticator):
             response = self.session.get(url, headers=headers)
             if not response.ok:
                 self._logger.warning('Error retrieving accounts for contract')
+                self._logger.debug('Response was %s', response.text)
                 return []
             self._accounts = [Account(self, data) for data in response.json().get('contractList', [])]
             self._accounts.extend(self._get_foreign_accounts())
