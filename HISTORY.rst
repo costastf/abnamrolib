@@ -181,3 +181,9 @@ History
 ------------------
 
 * Fixed bug with new cookie header required by ICS.
+
+
+5.2.2 (16-04-2021)
+------------------
+
+* Made retrieval by date ranges a bit stricter on the accepted input and bumped dependencies.
