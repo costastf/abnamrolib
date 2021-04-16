@@ -37,7 +37,7 @@ from dateutil.parser import parse
 from urllib3.util import parse_url
 from ynabinterfaceslib import Comparable, Transaction, Contract
 
-from .abnamrolibexceptions import InvalidDateFormat
+from .abnamrolibexceptions import InvalidDateFormat, InvalidDate
 from .common import CookieAuthenticator
 
 __author__ = '''Costas Tyfoxylos <costas.tyf@gmail.com>'''
@@ -374,6 +374,10 @@ class Account(Comparable):
         """
         start_date = self._parse_date(date_to).date()
         end_date = self._parse_date(date_from).date()
+        if end_date >= start_date:
+            raise InvalidDate('date_from cannot be bigger or the same as date_to')
+        if start_date == date.today():
+            raise InvalidDate('date_from cannot be the running day. Please use "get_transactions_since_date"')
         last_mutation_key = f'{start_date.year}-{start_date.month:02d}-{start_date.day + 1:02d}-00.00.00.000000'
         while last_mutation_key:
             params = {'lastMutationKey': last_mutation_key}

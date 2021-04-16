@@ -52,3 +52,7 @@ class InvalidCookies(Exception):
 
 class InvalidDateFormat(Exception):
     """The date provided cannot be automatically parsed."""
+
+
+class InvalidDate(Exception):
+    """The date provided cannot be used for searching."""
