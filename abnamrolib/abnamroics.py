@@ -32,10 +32,13 @@ Main code for abnamrolib.
 """
 
 import logging
+from datetime import date
 
+from dateutil.parser import parse
 from urllib3.util import parse_url
 from ynabinterfaceslib import Contract, Comparable, Transaction
 
+from .abnamrolibexceptions import InvalidDateFormat, InvalidDate
 from .common import CookieAuthenticator
 
 __author__ = '''Costas Tyfoxylos <costas.tyf@gmail.com>'''
@@ -263,6 +266,93 @@ class CreditCard(Comparable):  # pylint: disable=too-many-public-methods
         for period in self.periods:
             for transaction in period.transactions:
                 yield transaction
+
+    @staticmethod
+    def _parse_date(date_):
+        try:
+            date_object = parse(date_)
+        except ValueError:
+            raise InvalidDateFormat(date_)
+        return date_object
+
+    def get_transactions_for_date(self, date_):
+        """Retrieves all transactions for a provided date.
+
+        Args:
+            date_ (str): The date to provide the transactions for
+
+        Returns:
+            transactions (generator): Transaction objects
+
+        """
+        date_object = self._parse_date(date_).date()
+        for transaction in self.get_transactions_for_period(str(date_object.year), str(date_object.month + 1)):
+            if transaction.transaction_date == date_object.strftime('%Y-%m-%d'):
+                yield transaction
+
+    def get_transactions_for_date_range(self, date_from, date_to):
+        """Retrieves all transactions between two provided dates.
+
+        Args:
+            date_from (str): The date to provide the transactions from
+            date_to (str): The date to provide the transactions until
+
+        Returns:
+            transactions (generator): Transaction objects
+
+        """
+        start_date = self._parse_date(date_from).date()
+        end_date = self._parse_date(date_to).date()
+        if end_date <= start_date:
+            raise InvalidDate('date_from cannot be bigger or the same as date_to')
+        if end_date == date.today():
+            raise InvalidDate('date_to cannot be the running day. Please use "get_transactions_since_date"')
+        years = list(range(start_date.year, end_date.year + 1))
+        if len(years) == 1:
+            for period in range(start_date.month + 1, end_date.month + 1):
+                for transaction in self.get_transactions_for_period(str(years[0]), str(period)):
+                    if start_date <= self._parse_date(transaction.transaction_date).date() <= end_date:
+                        yield transaction
+        if len(years) == 2:
+            for year in years:
+                for period in range(start_date.month + 1, 12 + 1):
+                    for transaction in self.get_transactions_for_period(str(year), str(period)):
+                        if start_date <= self._parse_date(transaction.transaction_date).date() <= end_date:
+                            yield transaction
+                for period in range(1, end_date.month + 1):
+                    for transaction in self.get_transactions_for_period(str(year), str(period)):
+                        if start_date <= self._parse_date(transaction.transaction_date).date() <= end_date:
+                            yield transaction
+        if len(years) > 2:
+            for period in range(start_date.month + 1, 12 + 1):
+                for transaction in self.get_transactions_for_period(str(years[0]), str(period)):
+                    if start_date <= self._parse_date(transaction.transaction_date).date():
+                        yield transaction
+            for year in years[1:-1]:
+                for period in range(1, 13):
+                    for transaction in self.get_transactions_for_period(str(year), str(period)):
+                        yield transaction
+            for period in range(1, end_date.month + 1):
+                for transaction in self.get_transactions_for_period(str(years[-1]), str(period)):
+                    if self._parse_date(transaction.transaction_date).date() <= end_date:
+                        yield transaction
+
+    # def get_transactions_since_date(self, date_):
+    #     """Retrieves all transactions since a provided date.
+    #
+    #     Args:
+    #         date_ (str): The date to provide the transactions until
+    #
+    #     Returns:
+    #         transactions (generator): Transaction objects
+    #
+    #     """
+    #     end_date = self._parse_date(date_).date()
+    #     for transaction in self.transactions:
+    #         if transaction.transaction_date < end_date:
+    #             break
+    #         yield transaction
+
 
     def get_current_period_transactions(self):
         """Retrieves transactions for the current period.

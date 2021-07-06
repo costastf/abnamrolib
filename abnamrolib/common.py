@@ -98,8 +98,9 @@ class CookieAuthenticator:  # pylint: disable=too-few-public-methods
     def _load_text_cookies(self, session, cookies_file):
         try:
             text = cookies_file.read().decode('utf-8')
-            cookies = [Cookie(*line.strip().split()) for line in text.splitlines()
-                       if not line.strip().startswith('#') and line]
+            cookie_entries = [line.strip().split() for line in text.splitlines()
+                              if line and not line.strip().startswith('#')]
+            cookies = [Cookie(*data) for data in cookie_entries if len(data) == 7]
             for cookie in cookies:
                 session.cookies.set(**cookie.to_dict())
         except Exception:

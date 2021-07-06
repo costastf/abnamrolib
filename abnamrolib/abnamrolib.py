@@ -377,7 +377,7 @@ class Account(Comparable):
         if end_date >= start_date:
             raise InvalidDate('date_from cannot be bigger or the same as date_to')
         if start_date == date.today():
-            raise InvalidDate('date_from cannot be the running day. Please use "get_transactions_since_date"')
+            raise InvalidDate('date_to cannot be the running day. Please use "get_transactions_since_date"')
         last_mutation_key = f'{start_date.year}-{start_date.month:02d}-{start_date.day + 1:02d}-00.00.00.000000'
         while last_mutation_key:
             params = {'lastMutationKey': last_mutation_key}
