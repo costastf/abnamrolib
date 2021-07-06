@@ -187,3 +187,9 @@ History
 ------------------
 
 * Made retrieval by date ranges a bit stricter on the accepted input and bumped dependencies.
+
+
+5.3.0 (06-07-2021)
+------------------
+
+* Implemented date retrieval, fixed a bug with short cookies.
