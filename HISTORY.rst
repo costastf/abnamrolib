@@ -193,3 +193,9 @@ History
 ------------------
 
 * Implemented date retrieval, fixed a bug with short cookies.
+
+
+5.3.1 (07-07-2021)
+------------------
+
+* Added pipeline and bumped dependencies.
