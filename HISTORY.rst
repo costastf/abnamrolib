@@ -199,3 +199,9 @@ History
 ------------------
 
 * Added pipeline and bumped dependencies.
+
+
+5.3.2 (07-07-2021)
+------------------
+
+* Added pipeline and bumped dependencies.
