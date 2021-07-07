@@ -290,7 +290,7 @@ class CreditCard(Comparable):  # pylint: disable=too-many-public-methods
             if transaction.transaction_date == date_object.strftime('%Y-%m-%d'):
                 yield transaction
 
-    def get_transactions_for_date_range(self, date_from, date_to):
+    def get_transactions_for_date_range(self, date_from, date_to):  # noqa: MC0001
         """Retrieves all transactions between two provided dates.
 
         Args:
@@ -352,7 +352,6 @@ class CreditCard(Comparable):  # pylint: disable=too-many-public-methods
     #         if transaction.transaction_date < end_date:
     #             break
     #         yield transaction
-
 
     def get_current_period_transactions(self):
         """Retrieves transactions for the current period.
